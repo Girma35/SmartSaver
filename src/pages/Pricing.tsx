@@ -102,11 +102,15 @@ const Pricing: React.FC = () => {
       const { url, error } = await createCheckoutSession(plan.stripePriceId, session.access_token);
       
       if (error) {
+        console.error('Checkout error:', error);
         alert('Checkout error: ' + error);
         return;
       }
       
       if (url) {
+        console.log('Redirecting to Stripe checkout:', url);
+        // Store current page before redirect so we can return if needed
+        sessionStorage.setItem('preCheckoutPage', 'pricing');
         // Redirect to Stripe's hosted checkout page
         window.location.href = url;
       } else {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
 import AuthForm from './components/AuthForm';
 import Landing from './pages/Landing';
@@ -14,6 +14,36 @@ function App() {
   const [currentPage, setCurrentPage] = useState('home');
   const { user, loading } = useAuth();
 
+  // Handle URL-based routing for success page and other special routes
+  useEffect(() => {
+    const path = window.location.pathname;
+    const searchParams = new URLSearchParams(window.location.search);
+    
+    if (path === '/success' || searchParams.has('session_id')) {
+      setCurrentPage('success');
+      return;
+    }
+    
+    // Don't change page if user is already on a specific page
+    // This prevents unwanted redirects when the component re-renders
+    if (currentPage === 'home' && user) {
+      // Only auto-navigate to dashboard if we're still on home and user just logged in
+      const hasNavigated = sessionStorage.getItem('hasNavigated');
+      if (!hasNavigated) {
+        setCurrentPage('dashboard');
+        sessionStorage.setItem('hasNavigated', 'true');
+      }
+    }
+  }, [user, currentPage]);
+
+  // Clear navigation flag when user logs out
+  useEffect(() => {
+    if (!user) {
+      sessionStorage.removeItem('hasNavigated');
+      setCurrentPage('home');
+    }
+  }, [user]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -27,8 +57,8 @@ function App() {
     );
   }
 
-  // Handle success page routing
-  if (window.location.pathname === '/success') {
+  // Handle success page routing - show success page even if not authenticated
+  if (currentPage === 'success' || window.location.pathname === '/success') {
     return <Success />;
   }
 
@@ -38,6 +68,18 @@ function App() {
 
   const handleGetStarted = () => {
     setCurrentPage('add');
+  };
+
+  const handlePageChange = (page: string) => {
+    setCurrentPage(page);
+    // Update URL for better user experience (optional)
+    if (page === 'pricing') {
+      window.history.pushState({}, '', '/pricing');
+    } else if (page === 'dashboard') {
+      window.history.pushState({}, '', '/dashboard');
+    } else {
+      window.history.pushState({}, '', '/');
+    }
   };
 
   const renderCurrentPage = () => {
@@ -54,6 +96,8 @@ function App() {
         return <Profile />;
       case 'pricing':
         return <Pricing />;
+      case 'success':
+        return <Success />;
       default:
         return <Landing onGetStarted={handleGetStarted} />;
     }
@@ -61,8 +105,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {currentPage !== 'home' && (
-        <Navigation currentPage={currentPage} onPageChange={setCurrentPage} />
+      {currentPage !== 'home' && currentPage !== 'success' && (
+        <Navigation currentPage={currentPage} onPageChange={handlePageChange} />
       )}
       {renderCurrentPage()}
     </div>
