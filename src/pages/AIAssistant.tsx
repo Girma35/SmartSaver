@@ -26,6 +26,83 @@ const AIAssistant: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Enhanced message formatting function
+  const formatAIMessage = (text: string) => {
+    // Split by sections and format each part
+    const sections = text.split(/\*\*(.*?)\*\*/g);
+    const elements: JSX.Element[] = [];
+    
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      
+      if (i % 2 === 1) {
+        // This is a header (between **)
+        elements.push(
+          <div key={i} className="font-bold text-gray-900 text-lg mb-3 flex items-center">
+            {section.includes('Financial Snapshot') && <TrendingUp className="w-5 h-5 mr-2 text-purple-500" />}
+            {section.includes('Smart Money') && <Sparkles className="w-5 h-5 mr-2 text-blue-500" />}
+            {section.includes('Challenge') && <DollarSign className="w-5 h-5 mr-2 text-green-500" />}
+            {section}
+          </div>
+        );
+      } else if (section.trim()) {
+        // Regular content
+        const lines = section.split('\n').filter(line => line.trim());
+        
+        lines.forEach((line, lineIndex) => {
+          const trimmedLine = line.trim();
+          
+          if (trimmedLine.startsWith('📈') || trimmedLine.startsWith('💡') || trimmedLine.startsWith('🎯')) {
+            // Section headers with emojis
+            elements.push(
+              <div key={`${i}-${lineIndex}`} className="font-semibold text-gray-800 text-base mb-2 mt-4">
+                {trimmedLine}
+              </div>
+            );
+          } else if (trimmedLine.startsWith('•')) {
+            // Bullet points
+            elements.push(
+              <div key={`${i}-${lineIndex}`} className="flex items-start space-x-2 mb-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
+                <span className="text-gray-700 text-sm leading-relaxed">{trimmedLine.substring(1).trim()}</span>
+              </div>
+            );
+          } else if (trimmedLine.match(/^\d+\./)) {
+            // Numbered lists
+            const [number, ...rest] = trimmedLine.split('.');
+            elements.push(
+              <div key={`${i}-${lineIndex}`} className="flex items-start space-x-3 mb-3">
+                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                  <span className="text-white text-xs font-bold">{number}</span>
+                </div>
+                <div className="flex-1">
+                  <span className="text-gray-800 font-medium">{rest.join('.').split(':')[0]}:</span>
+                  <span className="text-gray-600 ml-1">{rest.join('.').split(':').slice(1).join(':')}</span>
+                </div>
+              </div>
+            );
+          } else if (trimmedLine && !trimmedLine.startsWith('Need specific')) {
+            // Regular paragraphs
+            elements.push(
+              <p key={`${i}-${lineIndex}`} className="text-gray-700 mb-3 leading-relaxed">
+                {trimmedLine}
+              </p>
+            );
+          } else if (trimmedLine.startsWith('Need specific')) {
+            // Call to action
+            elements.push(
+              <div key={`${i}-${lineIndex}`} className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
+                <p className="text-purple-700 font-medium text-sm">{trimmedLine}</p>
+              </div>
+            );
+          }
+        });
+      }
+    }
+    
+    return <div className="space-y-1">{elements}</div>;
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim() || isLoading) return;
@@ -149,12 +226,16 @@ const AIAssistant: React.FC = () => {
                     <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
                       message.isUser
                         ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                        : 'bg-gray-100 text-gray-900'
+                        : 'bg-gray-50 text-gray-900'
                     }`}>
-                      <div className={`text-sm whitespace-pre-line ${
+                      <div className={`text-sm ${
                         message.isUser ? 'text-white' : 'text-gray-900'
                       }`}>
-                        {message.text}
+                        {message.isUser ? (
+                          <div className="whitespace-pre-line">{message.text}</div>
+                        ) : (
+                          formatAIMessage(message.text)
+                        )}
                       </div>
                       <p className={`text-xs mt-2 ${
                         message.isUser ? 'text-purple-100' : 'text-gray-500'
@@ -170,7 +251,7 @@ const AIAssistant: React.FC = () => {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="bg-gray-100 px-4 py-3 rounded-2xl">
+                    <div className="bg-gray-50 px-4 py-3 rounded-2xl">
                       <div className="flex space-x-1">
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                         <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
