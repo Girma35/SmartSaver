@@ -86,20 +86,49 @@ const AIAssistant: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8">
       <div className="max-w-6xl mx-auto px-4">
+        {/* Enhanced Header with Professional Image */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+          <div className="flex items-center justify-center space-x-6 mb-6">
+            <div className="relative">
+              <img 
+                src="/photo_2025-05-19_22-40-08.jpg" 
+                alt="AI Financial Advisor"
+                className="w-20 h-20 rounded-2xl object-cover shadow-lg border-4 border-white"
+              />
+              <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">AI Financial Advisor</h1>
+            <div className="text-left">
+              <h1 className="text-3xl font-bold text-gray-900">AI Financial Advisor</h1>
+              <p className="text-gray-600 mt-1">Your personal finance expert powered by advanced AI</p>
+              <div className="flex items-center space-x-2 mt-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-600 font-medium">Online & Ready to Help</span>
+              </div>
+            </div>
           </div>
-          <p className="text-gray-600">Get personalized financial insights powered by advanced AI analytics</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Chat Interface */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              {/* Chat Header */}
+              <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-4">
+                <div className="flex items-center space-x-3">
+                  <img 
+                    src="/photo_2025-05-19_22-40-08.jpg" 
+                    alt="AI Advisor"
+                    className="w-10 h-10 rounded-xl object-cover border-2 border-white/20"
+                  />
+                  <div>
+                    <h3 className="text-white font-semibold">Financial Analysis Chat</h3>
+                    <p className="text-purple-100 text-sm">Get personalized insights and recommendations</p>
+                  </div>
+                </div>
+              </div>
+
               {/* Chat Messages */}
               <div className="h-96 overflow-y-auto p-6 space-y-4">
                 {messages.map((message) => (
@@ -117,7 +146,11 @@ const AIAssistant: React.FC = () => {
                       {message.isUser ? (
                         <User className="w-4 h-4 text-white" />
                       ) : (
-                        <Bot className="w-4 h-4 text-gray-600" />
+                        <img 
+                          src="/photo_2025-05-19_22-40-08.jpg" 
+                          alt="AI"
+                          className="w-8 h-8 rounded-full object-cover"
+                        />
                       )}
                     </div>
                     
@@ -142,8 +175,12 @@ const AIAssistant: React.FC = () => {
                 
                 {isLoading && (
                   <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                      <Bot className="w-4 h-4 text-gray-600" />
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
+                      <img 
+                        src="/photo_2025-05-19_22-40-08.jpg" 
+                        alt="AI"
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
                     </div>
                     <div className="bg-gray-100 px-4 py-3 rounded-2xl">
                       <div className="flex space-x-1">
@@ -165,7 +202,7 @@ const AIAssistant: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => handleQuickPrompt(prompt)}
-                      className="text-sm bg-white text-gray-700 px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors duration-200 text-left"
+                      className="text-sm bg-white text-gray-700 px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors duration-200 text-left hover:border-purple-300"
                     >
                       {prompt}
                     </button>
@@ -198,6 +235,33 @@ const AIAssistant: React.FC = () => {
 
           {/* Financial Summary Sidebar */}
           <div className="space-y-6">
+            {/* AI Advisor Profile */}
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <div className="text-center mb-4">
+                <img 
+                  src="/photo_2025-05-19_22-40-08.jpg" 
+                  alt="Your AI Financial Advisor"
+                  className="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 shadow-lg"
+                />
+                <h3 className="font-semibold text-gray-900">Your AI Advisor</h3>
+                <p className="text-sm text-gray-600">Specialized in personal finance optimization</p>
+              </div>
+              <div className="space-y-2 text-sm text-gray-600">
+                <div className="flex items-center justify-between">
+                  <span>Expertise:</span>
+                  <span className="text-green-600 font-medium">Financial Planning</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Experience:</span>
+                  <span className="text-blue-600 font-medium">Advanced AI</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Specialization:</span>
+                  <span className="text-purple-600 font-medium">Budget Analysis</span>
+                </div>
+              </div>
+            </div>
+
             {/* AI Capabilities */}
             <div className="bg-white rounded-xl p-6 shadow-lg">
               <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
