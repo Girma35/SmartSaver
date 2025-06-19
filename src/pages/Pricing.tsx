@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Star, Zap, Crown, ArrowRight, Loader2, CreditCard, AlertCircle } from 'lucide-react';
+import { Check, Star, Zap, Crown, ArrowRight, Loader2, CreditCard, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscription } from '../hooks/useSubscription';
 import { createCheckoutSession } from '../services/stripeService';
@@ -48,7 +48,7 @@ const Pricing: React.FC = () => {
         'Professional-quality exports'
       ],
       popular: true,
-      stripePriceId: 'price_1QJ2XYFLuIzlW9kkTest123' // Test price ID
+      stripePriceId: null // TODO: Replace with actual Stripe Price ID from your dashboard
     },
     {
       id: 'premium',
@@ -69,7 +69,7 @@ const Pricing: React.FC = () => {
         'Dedicated account manager'
       ],
       popular: false,
-      stripePriceId: 'price_1QJ2XZFLuIzlW9kkTest456' // Test price ID
+      stripePriceId: null // TODO: Replace with actual Stripe Price ID from your dashboard
     }
   ];
 
@@ -85,7 +85,7 @@ const Pricing: React.FC = () => {
     }
 
     if (!plan.stripePriceId) {
-      setError('This plan is not available for purchase yet. Please contact support.');
+      setError(`The ${plan.name} is not available for purchase yet. Please set up Stripe Price IDs in your dashboard first.`);
       return;
     }
 
@@ -130,11 +130,12 @@ const Pricing: React.FC = () => {
     if (loadingPlan === plan.id) return 'Creating checkout...';
     if (isCurrentPlan(plan.id)) return 'Current Plan';
     if (plan.id === 'free') return 'Get Started Free';
+    if (!plan.stripePriceId) return 'Setup Required';
     return 'Upgrade Now';
   };
 
   const getButtonDisabled = (plan: typeof plans[0]) => {
-    return loadingPlan !== null || isCurrentPlan(plan.id);
+    return loadingPlan !== null || isCurrentPlan(plan.id) || (!plan.stripePriceId && plan.id !== 'free');
   };
 
   return (
@@ -160,6 +161,16 @@ const Pricing: React.FC = () => {
           </div>
         </div>
 
+        {/* Setup Required Notice */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center space-x-2 bg-orange-100 border border-orange-300 rounded-full px-6 py-3 shadow-lg">
+            <AlertCircle className="w-5 h-5 text-orange-600" />
+            <span className="text-orange-800 font-medium">
+              Stripe setup required for paid plans - see instructions below
+            </span>
+          </div>
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="text-center mb-8">
@@ -169,16 +180,6 @@ const Pricing: React.FC = () => {
             </div>
           </div>
         )}
-
-        {/* Test Mode Banner */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center space-x-2 bg-yellow-100 border border-yellow-300 rounded-full px-6 py-3 shadow-lg">
-            <CreditCard className="w-5 h-5 text-yellow-600" />
-            <span className="text-yellow-800 font-medium">
-              🧪 Test Mode - Use card 4242 4242 4242 4242 for testing
-            </span>
-          </div>
-        </div>
 
         {/* Current Subscription Status */}
         {user && !subscriptionLoading && (
@@ -198,13 +199,16 @@ const Pricing: React.FC = () => {
             const Icon = plan.icon;
             const isPopular = plan.popular;
             const isCurrent = isCurrentPlan(plan.id);
+            const needsSetup = !plan.stripePriceId && plan.id !== 'free';
             
             return (
               <div
                 key={plan.id}
                 className={`relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
                   isPopular ? 'ring-2 ring-purple-500 ring-opacity-50' : ''
-                } ${isCurrent ? 'ring-2 ring-green-500 ring-opacity-50' : ''}`}
+                } ${isCurrent ? 'ring-2 ring-green-500 ring-opacity-50' : ''} ${
+                  needsSetup ? 'opacity-75' : ''
+                }`}
               >
                 {/* Popular Badge */}
                 {isPopular && (
@@ -220,6 +224,15 @@ const Pricing: React.FC = () => {
                   <div className="absolute -top-4 right-4">
                     <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
                       Current
+                    </div>
+                  </div>
+                )}
+
+                {/* Setup Required Badge */}
+                {needsSetup && (
+                  <div className="absolute -top-4 right-4">
+                    <div className="bg-orange-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                      Setup Required
                     </div>
                   </div>
                 )}
@@ -263,6 +276,8 @@ const Pricing: React.FC = () => {
                     className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center space-x-2 ${
                       isCurrent
                         ? 'bg-green-100 text-green-700 cursor-default'
+                        : needsSetup
+                        ? 'bg-orange-100 text-orange-700 cursor-not-allowed'
                         : plan.id === 'free'
                         ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         : `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`
@@ -273,7 +288,7 @@ const Pricing: React.FC = () => {
                     ) : (
                       <>
                         <span>{getButtonText(plan)}</span>
-                        {!isCurrent && plan.id !== 'free' && <ArrowRight className="w-5 h-5" />}
+                        {!isCurrent && !needsSetup && plan.id !== 'free' && <ArrowRight className="w-5 h-5" />}
                       </>
                     )}
                   </button>
@@ -283,39 +298,36 @@ const Pricing: React.FC = () => {
           })}
         </div>
 
-        {/* Test Card Information */}
+        {/* Stripe Setup Instructions */}
         <div className="mt-16 max-w-4xl mx-auto">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
             <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
               <CreditCard className="w-5 h-5 mr-2" />
-              Test Payment Information
+              Stripe Setup Required
             </h3>
-            <div className="text-blue-800 space-y-2">
-              <p><strong>Test Card Number:</strong> 4242 4242 4242 4242</p>
-              <p><strong>Expiry:</strong> Any future date (e.g., 12/34)</p>
-              <p><strong>CVC:</strong> Any 3 digits (e.g., 123)</p>
-              <p><strong>ZIP:</strong> Any 5 digits (e.g., 12345)</p>
-              <p className="text-sm mt-3 text-blue-700">
-                💡 This will create a real Stripe checkout session in test mode. No actual charges will be made.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Additional Test Cards */}
-        <div className="mt-8 max-w-4xl mx-auto">
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-            <h3 className="font-semibold text-gray-900 mb-3">Other Test Cards</h3>
-            <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
-              <div>
-                <p><strong>Visa:</strong> 4242 4242 4242 4242</p>
-                <p><strong>Visa (debit):</strong> 4000 0566 5566 5556</p>
-                <p><strong>Mastercard:</strong> 5555 5555 5555 4444</p>
-              </div>
-              <div>
-                <p><strong>American Express:</strong> 3782 822463 10005</p>
-                <p><strong>Declined card:</strong> 4000 0000 0000 0002</p>
-                <p><strong>Insufficient funds:</strong> 4000 0000 0000 9995</p>
+            <div className="text-blue-800 space-y-3">
+              <p className="font-medium">To enable paid subscriptions, you need to:</p>
+              <ol className="list-decimal list-inside space-y-2 ml-4">
+                <li>
+                  <a 
+                    href="https://dashboard.stripe.com/products" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 underline inline-flex items-center"
+                  >
+                    Go to your Stripe Dashboard → Products
+                    <ExternalLink className="w-4 h-4 ml-1" />
+                  </a>
+                </li>
+                <li>Create a "Pro Tier" product with a $10/month recurring price</li>
+                <li>Create a "Premium Tier" product with a $20/month recurring price</li>
+                <li>Copy the Price IDs (they start with "price_") from each product</li>
+                <li>Replace the <code className="bg-blue-100 px-2 py-1 rounded">stripePriceId: null</code> values in the pricing plans with your actual Price IDs</li>
+              </ol>
+              <div className="mt-4 p-3 bg-blue-100 rounded-lg">
+                <p className="text-sm">
+                  <strong>Example:</strong> <code>stripePriceId: "price_1234567890abcdef"</code>
+                </p>
               </div>
             </div>
           </div>
@@ -367,13 +379,9 @@ const Pricing: React.FC = () => {
             <p className="text-purple-100 text-lg mb-8 max-w-2xl mx-auto">
               Join thousands of users who have taken control of their finances with our powerful tools and AI-driven insights.
             </p>
-            <button
-              onClick={() => handleSubscribe(plans[1])} // Pro plan
-              disabled={loadingPlan !== null}
-              className="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loadingPlan === 'pro' ? 'Creating checkout...' : 'Start Your Journey Today'}
-            </button>
+            <p className="text-purple-200 text-sm mb-6">
+              Complete Stripe setup to enable paid subscriptions
+            </p>
           </div>
         </div>
       </div>
