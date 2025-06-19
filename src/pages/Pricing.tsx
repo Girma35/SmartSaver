@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Star, Zap, Crown, ArrowRight, Loader2 } from 'lucide-react';
+import { Check, Star, Zap, Crown, ArrowRight, Loader2, CreditCard } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscription } from '../hooks/useSubscription';
 import { createCheckoutSession } from '../services/stripeService';
@@ -47,7 +47,7 @@ const Pricing: React.FC = () => {
         'Professional-quality exports'
       ],
       popular: true,
-      stripePriceId: 'price_1RbdGdFLuIzlW9kk8XYZ1234' // Test price ID - replace with real one
+      stripePriceId: 'price_1RbdGdFLuIzlW9kk8XYZ1234' // Test price ID
     },
     {
       id: 'premium',
@@ -68,7 +68,7 @@ const Pricing: React.FC = () => {
         'Dedicated account manager'
       ],
       popular: false,
-      stripePriceId: 'price_1RbdGeFLuIzlW9kk9ABC5678' // Test price ID - replace with real one
+      stripePriceId: 'price_1RbdGeFLuIzlW9kk9ABC5678' // Test price ID
     }
   ];
 
@@ -91,24 +91,22 @@ const Pricing: React.FC = () => {
     setLoadingPlan(plan.id);
 
     try {
-      // For testing, we'll simulate the checkout process
-      console.log('Creating checkout session for:', plan.name);
+      console.log('Creating Stripe checkout session for:', plan.name);
       
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Create real Stripe checkout session
+      const { url, error } = await createCheckoutSession(plan.stripePriceId);
       
-      // For now, just redirect to success page for testing
-      window.location.href = '/success?session_id=cs_test_' + Math.random().toString(36).substr(2, 9);
+      if (error) {
+        alert('Checkout error: ' + error);
+        return;
+      }
       
-      // Uncomment this when you have real Stripe price IDs:
-      // const { url, error } = await createCheckoutSession(plan.stripePriceId);
-      // if (error) {
-      //   alert('Checkout error: ' + error);
-      //   return;
-      // }
-      // if (url) {
-      //   window.location.href = url;
-      // }
+      if (url) {
+        // Redirect to Stripe's hosted checkout page
+        window.location.href = url;
+      } else {
+        alert('Failed to create checkout session. Please try again.');
+      }
     } catch (error) {
       console.error('Subscription error:', error);
       alert('Something went wrong. Please try again.');
@@ -127,7 +125,7 @@ const Pricing: React.FC = () => {
   };
 
   const getButtonText = (plan: typeof plans[0]) => {
-    if (loadingPlan === plan.id) return 'Processing...';
+    if (loadingPlan === plan.id) return 'Creating checkout...';
     if (isCurrentPlan(plan.id)) return 'Current Plan';
     if (plan.id === 'free') return 'Get Started Free';
     return 'Upgrade Now';
@@ -163,9 +161,9 @@ const Pricing: React.FC = () => {
         {/* Test Mode Banner */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center space-x-2 bg-yellow-100 border border-yellow-300 rounded-full px-6 py-3 shadow-lg">
-            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+            <CreditCard className="w-5 h-5 text-yellow-600" />
             <span className="text-yellow-800 font-medium">
-              🧪 Test Mode - No real charges will be made
+              🧪 Test Mode - Use card 4242 4242 4242 4242 for testing
             </span>
           </div>
         </div>
@@ -273,18 +271,40 @@ const Pricing: React.FC = () => {
           })}
         </div>
 
-        {/* Test Instructions */}
+        {/* Test Card Information */}
         <div className="mt-16 max-w-4xl mx-auto">
           <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
             <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
-              <Zap className="w-5 h-5 mr-2" />
-              Testing Instructions
+              <CreditCard className="w-5 h-5 mr-2" />
+              Test Payment Information
             </h3>
             <div className="text-blue-800 space-y-2">
-              <p>• Click "Upgrade Now" on any paid plan to test the checkout flow</p>
-              <p>• This will simulate a successful payment and redirect to the success page</p>
-              <p>• No real charges will be made in test mode</p>
-              <p>• To use real Stripe checkout, replace the test price IDs with actual ones from your Stripe dashboard</p>
+              <p><strong>Test Card Number:</strong> 4242 4242 4242 4242</p>
+              <p><strong>Expiry:</strong> Any future date (e.g., 12/34)</p>
+              <p><strong>CVC:</strong> Any 3 digits (e.g., 123)</p>
+              <p><strong>ZIP:</strong> Any 5 digits (e.g., 12345)</p>
+              <p className="text-sm mt-3 text-blue-700">
+                💡 This will create a real Stripe checkout session in test mode. No actual charges will be made.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Additional Test Cards */}
+        <div className="mt-8 max-w-4xl mx-auto">
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
+            <h3 className="font-semibold text-gray-900 mb-3">Other Test Cards</h3>
+            <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-700">
+              <div>
+                <p><strong>Visa:</strong> 4242 4242 4242 4242</p>
+                <p><strong>Visa (debit):</strong> 4000 0566 5566 5556</p>
+                <p><strong>Mastercard:</strong> 5555 5555 5555 4444</p>
+              </div>
+              <div>
+                <p><strong>American Express:</strong> 3782 822463 10005</p>
+                <p><strong>Declined card:</strong> 4000 0000 0000 0002</p>
+                <p><strong>Insufficient funds:</strong> 4000 0000 0000 9995</p>
+              </div>
             </div>
           </div>
         </div>
@@ -337,9 +357,10 @@ const Pricing: React.FC = () => {
             </p>
             <button
               onClick={() => handleSubscribe(plans[1])} // Pro plan
-              className="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+              disabled={loadingPlan !== null}
+              className="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Start Your Journey Today
+              {loadingPlan === 'pro' ? 'Creating checkout...' : 'Start Your Journey Today'}
             </button>
           </div>
         </div>
