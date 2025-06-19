@@ -59,8 +59,26 @@ export const useProfile = () => {
           .select()
           .single();
 
-        if (createError) throw createError;
-        setProfile(newProfile);
+        if (createError) {
+          // Handle race condition: if profile was created by another concurrent call
+          if (createError.code === '23505') {
+            // Duplicate key violation - profile was created by another process
+            // Fetch the existing profile
+            const { data: existingProfile, error: fetchError } = await supabase
+              .from('user_profiles')
+              .select('*')
+              .eq('user_id', user.id)
+              .single();
+
+            if (fetchError) throw fetchError;
+            setProfile(existingProfile);
+          } else {
+            // Re-throw any other error
+            throw createError;
+          }
+        } else {
+          setProfile(newProfile);
+        }
       }
       
       setError(null);
