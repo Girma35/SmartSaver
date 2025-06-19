@@ -1,22 +1,46 @@
-import React, { useState } from 'react';
-import { User, Mail, Calendar, Settings, Edit3, Save, X, Camera, Shield, Bell, CreditCard } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { User, Mail, Calendar, Settings, Edit3, Save, X, Camera, Shield, Bell, CreditCard, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useExpenses } from '../hooks/useExpenses';
+import { useProfile } from '../hooks/useProfile';
 
 const Profile: React.FC = () => {
   const { user, signOut } = useAuth();
   const { expenses } = useExpenses();
+  const { profile, loading, updateProfile, uploadAvatar } = useProfile();
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    displayName: user?.email?.split('@')[0] || 'User',
-    email: user?.email || '',
+  const [isSaving, setSaving] = useState(false);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [formData, setFormData] = useState({
+    display_name: '',
     phone: '',
     location: '',
-    bio: 'Financial wellness enthusiast focused on smart spending and saving goals.',
-    monthlyIncome: '',
-    savingsGoal: '',
-    financialGoals: ['Build Emergency Fund', 'Save for Vacation', 'Invest in Retirement']
+    bio: '',
+    monthly_income: '',
+    savings_goal: '',
+    financial_goals: [] as string[],
+    notifications_enabled: true,
+    two_factor_enabled: false
   });
+
+  // Update form data when profile loads
+  React.useEffect(() => {
+    if (profile) {
+      setFormData({
+        display_name: profile.display_name || '',
+        phone: profile.phone || '',
+        location: profile.location || '',
+        bio: profile.bio || '',
+        monthly_income: profile.monthly_income?.toString() || '',
+        savings_goal: profile.savings_goal?.toString() || '',
+        financial_goals: profile.financial_goals || [],
+        notifications_enabled: true,
+        two_factor_enabled: false
+      });
+    }
+  }, [profile]);
 
   // Calculate user statistics
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -24,15 +48,111 @@ const Profile: React.FC = () => {
   const joinDate = user?.created_at ? new Date(user.created_at) : new Date();
   const daysActive = Math.floor((new Date().getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
 
-  const handleSave = () => {
-    // Here you would typically save to a user profile table in Supabase
-    setIsEditing(false);
+  const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMessage(null);
+
+    try {
+      const updates = {
+        display_name: formData.display_name,
+        phone: formData.phone || null,
+        location: formData.location || null,
+        bio: formData.bio || null,
+        monthly_income: formData.monthly_income ? parseFloat(formData.monthly_income) : null,
+        savings_goal: formData.savings_goal ? parseFloat(formData.savings_goal) : null,
+        financial_goals: formData.financial_goals
+      };
+
+      const { error } = await updateProfile(updates);
+
+      if (error) {
+        setMessage({ type: 'error', text: error });
+      } else {
+        setMessage({ type: 'success', text: 'Profile updated successfully!' });
+        setIsEditing(false);
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to update profile' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
     setIsEditing(false);
-    // Reset form data if needed
+    setMessage(null);
+    // Reset form data to current profile values
+    if (profile) {
+      setFormData({
+        display_name: profile.display_name || '',
+        phone: profile.phone || '',
+        location: profile.location || '',
+        bio: profile.bio || '',
+        monthly_income: profile.monthly_income?.toString() || '',
+        savings_goal: profile.savings_goal?.toString() || '',
+        financial_goals: profile.financial_goals || [],
+        notifications_enabled: true,
+        two_factor_enabled: false
+      });
+    }
   };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      setMessage({ type: 'error', text: 'Please select an image file' });
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image must be less than 5MB' });
+      return;
+    }
+
+    try {
+      const { error } = await uploadAvatar(file);
+      if (error) {
+        setMessage({ type: 'error', text: error });
+      } else {
+        setMessage({ type: 'success', text: 'Avatar updated successfully!' });
+      }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to upload avatar' });
+    }
+  };
+
+  const addFinancialGoal = () => {
+    const newGoal = prompt('Enter a new financial goal:');
+    if (newGoal && newGoal.trim()) {
+      handleInputChange('financial_goals', [...formData.financial_goals, newGoal.trim()]);
+    }
+  };
+
+  const removeFinancialGoal = (index: number) => {
+    const updatedGoals = formData.financial_goals.filter((_, i) => i !== index);
+    handleInputChange('financial_goals', updatedGoals);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <User className="w-8 h-8 text-white" />
+          </div>
+          <p className="text-gray-600">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8">
@@ -48,13 +168,23 @@ const Profile: React.FC = () => {
               {/* Profile Image */}
               <div className="relative mb-4 md:mb-0">
                 <img 
-                  src="/photo_2025-05-19_22-40-08.jpg" 
+                  src={profile?.avatar_url || "/photo_2025-05-19_22-40-08.jpg"} 
                   alt="Profile"
                   className="w-32 h-32 rounded-2xl object-cover border-4 border-white shadow-lg"
                 />
-                <button className="absolute bottom-2 right-2 w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200">
+                <button 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute bottom-2 right-2 w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+                >
                   <Camera className="w-4 h-4 text-white" />
                 </button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
               
               {/* Profile Info */}
@@ -62,9 +192,9 @@ const Profile: React.FC = () => {
                 <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                   <div>
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                      {profileData.displayName}
+                      {profile?.display_name || 'User'}
                     </h1>
-                    <p className="text-gray-600 mb-2">{profileData.email}</p>
+                    <p className="text-gray-600 mb-2">{user?.email}</p>
                     <p className="text-gray-500 text-sm">
                       Member since {joinDate.toLocaleDateString()}
                     </p>
@@ -83,14 +213,16 @@ const Profile: React.FC = () => {
                       <div className="flex space-x-3">
                         <button
                           onClick={handleSave}
-                          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
+                          disabled={isSaving}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 disabled:opacity-50 transition-colors duration-200 flex items-center space-x-2"
                         >
                           <Save className="w-4 h-4" />
-                          <span>Save</span>
+                          <span>{isSaving ? 'Saving...' : 'Save'}</span>
                         </button>
                         <button
                           onClick={handleCancel}
-                          className="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-700 transition-colors duration-200 flex items-center space-x-2"
+                          disabled={isSaving}
+                          className="bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-700 disabled:opacity-50 transition-colors duration-200 flex items-center space-x-2"
                         >
                           <X className="w-4 h-4" />
                           <span>Cancel</span>
@@ -101,6 +233,26 @@ const Profile: React.FC = () => {
                 </div>
               </div>
             </div>
+
+            {/* Success/Error Messages */}
+            {message && (
+              <div className={`mt-6 p-4 rounded-xl flex items-center space-x-3 ${
+                message.type === 'success' 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-red-50 border border-red-200'
+              }`}>
+                {message.type === 'success' ? (
+                  <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+                ) : (
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                )}
+                <p className={`text-sm ${
+                  message.type === 'success' ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {message.text}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -120,18 +272,19 @@ const Profile: React.FC = () => {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={profileData.displayName}
-                      onChange={(e) => setProfileData({...profileData, displayName: e.target.value})}
+                      value={formData.display_name}
+                      onChange={(e) => handleInputChange('display_name', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                      placeholder="Enter your display name"
                     />
                   ) : (
-                    <p className="text-gray-900 py-3">{profileData.displayName}</p>
+                    <p className="text-gray-900 py-3">{profile?.display_name || 'Not provided'}</p>
                   )}
                 </div>
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                  <p className="text-gray-900 py-3">{profileData.email}</p>
+                  <p className="text-gray-900 py-3">{user?.email}</p>
                 </div>
                 
                 <div>
@@ -139,13 +292,13 @@ const Profile: React.FC = () => {
                   {isEditing ? (
                     <input
                       type="tel"
-                      value={profileData.phone}
-                      onChange={(e) => setProfileData({...profileData, phone: e.target.value})}
+                      value={formData.phone}
+                      onChange={(e) => handleInputChange('phone', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       placeholder="Enter phone number"
                     />
                   ) : (
-                    <p className="text-gray-900 py-3">{profileData.phone || 'Not provided'}</p>
+                    <p className="text-gray-900 py-3">{profile?.phone || 'Not provided'}</p>
                   )}
                 </div>
                 
@@ -154,13 +307,13 @@ const Profile: React.FC = () => {
                   {isEditing ? (
                     <input
                       type="text"
-                      value={profileData.location}
-                      onChange={(e) => setProfileData({...profileData, location: e.target.value})}
+                      value={formData.location}
+                      onChange={(e) => handleInputChange('location', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       placeholder="City, Country"
                     />
                   ) : (
-                    <p className="text-gray-900 py-3">{profileData.location || 'Not provided'}</p>
+                    <p className="text-gray-900 py-3">{profile?.location || 'Not provided'}</p>
                   )}
                 </div>
               </div>
@@ -169,14 +322,14 @@ const Profile: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
                 {isEditing ? (
                   <textarea
-                    value={profileData.bio}
-                    onChange={(e) => setProfileData({...profileData, bio: e.target.value})}
+                    value={formData.bio}
+                    onChange={(e) => handleInputChange('bio', e.target.value)}
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                     rows={3}
                     placeholder="Tell us about yourself..."
                   />
                 ) : (
-                  <p className="text-gray-900 py-3">{profileData.bio}</p>
+                  <p className="text-gray-900 py-3">{profile?.bio || 'Not provided'}</p>
                 )}
               </div>
             </div>
@@ -194,14 +347,15 @@ const Profile: React.FC = () => {
                   {isEditing ? (
                     <input
                       type="number"
-                      value={profileData.monthlyIncome}
-                      onChange={(e) => setProfileData({...profileData, monthlyIncome: e.target.value})}
+                      step="0.01"
+                      value={formData.monthly_income}
+                      onChange={(e) => handleInputChange('monthly_income', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       placeholder="0.00"
                     />
                   ) : (
                     <p className="text-gray-900 py-3">
-                      {profileData.monthlyIncome ? `$${profileData.monthlyIncome}` : 'Not provided'}
+                      {profile?.monthly_income ? `$${profile.monthly_income.toFixed(2)}` : 'Not provided'}
                     </p>
                   )}
                 </div>
@@ -211,30 +365,52 @@ const Profile: React.FC = () => {
                   {isEditing ? (
                     <input
                       type="number"
-                      value={profileData.savingsGoal}
-                      onChange={(e) => setProfileData({...profileData, savingsGoal: e.target.value})}
+                      step="0.01"
+                      value={formData.savings_goal}
+                      onChange={(e) => handleInputChange('savings_goal', e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
                       placeholder="0.00"
                     />
                   ) : (
                     <p className="text-gray-900 py-3">
-                      {profileData.savingsGoal ? `$${profileData.savingsGoal}` : 'Not set'}
+                      {profile?.savings_goal ? `$${profile.savings_goal.toFixed(2)}` : 'Not set'}
                     </p>
                   )}
                 </div>
               </div>
               
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-3">Financial Goals</label>
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-medium text-gray-700">Financial Goals</label>
+                  {isEditing && (
+                    <button
+                      onClick={addFinancialGoal}
+                      className="text-purple-600 hover:text-purple-700 text-sm font-medium"
+                    >
+                      + Add Goal
+                    </button>
+                  )}
+                </div>
                 <div className="flex flex-wrap gap-2">
-                  {profileData.financialGoals.map((goal, index) => (
+                  {formData.financial_goals.map((goal, index) => (
                     <span
                       key={index}
-                      className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium"
+                      className="bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2"
                     >
-                      {goal}
+                      <span>{goal}</span>
+                      {isEditing && (
+                        <button
+                          onClick={() => removeFinancialGoal(index)}
+                          className="text-purple-500 hover:text-purple-700"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
                     </span>
                   ))}
+                  {formData.financial_goals.length === 0 && (
+                    <p className="text-gray-500 text-sm">No financial goals set</p>
+                  )}
                 </div>
               </div>
             </div>
@@ -256,7 +432,13 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer" defaultChecked />
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={formData.notifications_enabled}
+                      onChange={(e) => handleInputChange('notifications_enabled', e.target.checked)}
+                      disabled={!isEditing}
+                    />
                     <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
                   </label>
                 </div>
@@ -270,7 +452,7 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                   <button className="text-purple-600 hover:text-purple-700 font-medium">
-                    Enable
+                    {formData.two_factor_enabled ? 'Enabled' : 'Enable'}
                   </button>
                 </div>
               </div>
