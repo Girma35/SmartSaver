@@ -86,15 +86,13 @@ const AIAssistant: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8">
       <div className="max-w-6xl mx-auto px-4">
-        {/* Enhanced Header with Professional Female Advisor */}
+        {/* Enhanced Header with AI Bot */}
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-6 mb-6">
             <div className="relative">
-              <img 
-                src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                alt="AI Financial Advisor"
-                className="w-20 h-20 rounded-2xl object-cover shadow-lg border-4 border-white"
-              />
+              <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center shadow-lg border-4 border-white">
+                <Bot className="w-12 h-12 text-white" />
+              </div>
               <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center shadow-lg">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
@@ -117,11 +115,9 @@ const AIAssistant: React.FC = () => {
               {/* Chat Header */}
               <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-4">
                 <div className="flex items-center space-x-3">
-                  <img 
-                    src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                    alt="AI Advisor"
-                    className="w-10 h-10 rounded-xl object-cover border-2 border-white/20"
-                  />
+                  <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <Bot className="w-6 h-6 text-white" />
+                  </div>
                   <div>
                     <h3 className="text-white font-semibold">Financial Analysis Chat</h3>
                     <p className="text-purple-100 text-sm">Get personalized insights and recommendations</p>
@@ -138,19 +134,15 @@ const AIAssistant: React.FC = () => {
                       message.isUser ? 'flex-row-reverse space-x-reverse' : ''
                     }`}
                   >
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                       message.isUser 
                         ? 'bg-gradient-to-r from-purple-500 to-blue-500' 
-                        : 'bg-gray-100'
+                        : 'bg-gradient-to-r from-purple-500 to-blue-500'
                     }`}>
                       {message.isUser ? (
                         <User className="w-4 h-4 text-white" />
                       ) : (
-                        <img 
-                          src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                          alt="AI"
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
+                        <Bot className="w-4 h-4 text-white" />
                       )}
                     </div>
                     
@@ -175,12 +167,8 @@ const AIAssistant: React.FC = () => {
                 
                 {isLoading && (
                   <div className="flex items-start space-x-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-                      <img 
-                        src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                        alt="AI"
-                        className="w-8 h-8 rounded-full object-cover"
-                      />
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-white" />
                     </div>
                     <div className="bg-gray-100 px-4 py-3 rounded-2xl">
                       <div className="flex space-x-1">
@@ -235,14 +223,12 @@ const AIAssistant: React.FC = () => {
 
           {/* Financial Summary Sidebar */}
           <div className="space-y-6">
-            {/* AI Advisor Profile */}
+            {/* AI Bot Profile */}
             <div className="bg-white rounded-xl p-6 shadow-lg">
               <div className="text-center mb-4">
-                <img 
-                  src="https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400" 
-                  alt="Your AI Financial Advisor"
-                  className="w-16 h-16 rounded-2xl object-cover mx-auto mb-3 shadow-lg"
-                />
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
+                  <Bot className="w-8 h-8 text-white" />
+                </div>
                 <h3 className="font-semibold text-gray-900">Your AI Advisor</h3>
                 <p className="text-sm text-gray-600">Specialized in personal finance optimization</p>
               </div>
