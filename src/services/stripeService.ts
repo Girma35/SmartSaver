@@ -7,7 +7,7 @@ export interface CheckoutSessionResponse {
   error?: string;
 }
 
-export const createCheckoutSession = async (priceId: string): Promise<CheckoutSessionResponse> => {
+export const createCheckoutSession = async (priceId: string, accessToken?: string): Promise<CheckoutSessionResponse> => {
   try {
     // Validate environment variables
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -17,12 +17,16 @@ export const createCheckoutSession = async (priceId: string): Promise<CheckoutSe
       throw new Error('Supabase environment variables are not configured');
     }
 
+    if (!accessToken) {
+      throw new Error('User must be authenticated to create checkout session');
+    }
+
     // Clean the URL to ensure no trailing slash
     const cleanUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
     const apiUrl = `${cleanUrl}/functions/v1/create-checkout-session`;
     
     const headers = {
-      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     };
 
@@ -77,7 +81,7 @@ export const createCheckoutSession = async (priceId: string): Promise<CheckoutSe
   }
 };
 
-export const createPortalSession = async (): Promise<CheckoutSessionResponse> => {
+export const createPortalSession = async (accessToken?: string): Promise<CheckoutSessionResponse> => {
   try {
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -86,11 +90,15 @@ export const createPortalSession = async (): Promise<CheckoutSessionResponse> =>
       throw new Error('Supabase environment variables are not configured');
     }
 
+    if (!accessToken) {
+      throw new Error('User must be authenticated to create portal session');
+    }
+
     const cleanUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
     const apiUrl = `${cleanUrl}/functions/v1/create-portal-session`;
     
     const headers = {
-      'Authorization': `Bearer ${supabaseAnonKey}`,
+      'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     };
 

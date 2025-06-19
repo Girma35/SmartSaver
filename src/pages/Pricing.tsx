@@ -5,7 +5,7 @@ import { useSubscription } from '../hooks/useSubscription';
 import { createCheckoutSession } from '../services/stripeService';
 
 const Pricing: React.FC = () => {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
@@ -78,6 +78,11 @@ const Pricing: React.FC = () => {
       return;
     }
 
+    if (!session?.access_token) {
+      alert('Authentication session expired. Please sign in again.');
+      return;
+    }
+
     if (plan.id === 'free') {
       alert('You are already on the free plan!');
       return;
@@ -93,8 +98,8 @@ const Pricing: React.FC = () => {
     try {
       console.log('Creating Stripe checkout session for:', plan.name);
       
-      // Create real Stripe checkout session
-      const { url, error } = await createCheckoutSession(plan.stripePriceId);
+      // Create real Stripe checkout session with user's access token
+      const { url, error } = await createCheckoutSession(plan.stripePriceId, session.access_token);
       
       if (error) {
         alert('Checkout error: ' + error);
