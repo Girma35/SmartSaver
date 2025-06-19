@@ -6,6 +6,8 @@ import AddExpense from './pages/AddExpense';
 import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistant';
 import Profile from './pages/Profile';
+import Pricing from './pages/Pricing';
+import Billing from './pages/Billing';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
@@ -45,6 +47,10 @@ function App() {
         return <AIAssistant />;
       case 'profile':
         return <Profile />;
+      case 'pricing':
+        return <Pricing />;
+      case 'billing':
+        return <Billing />;
       default:
         return <Landing onGetStarted={handleGetStarted} />;
     }
