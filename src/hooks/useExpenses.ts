@@ -18,15 +18,21 @@ export const useExpenses = () => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      setError(null);
+      
+      // Add timeout and better error handling
+      const { data, error: fetchError } = await supabase
         .from('expenses')
         .select('*')
         .eq('user_id', user.id)
         .order('date', { ascending: false });
 
-      if (error) throw error;
+      if (fetchError) {
+        console.error('Supabase fetch error:', fetchError);
+        throw new Error(`Database error: ${fetchError.message}`);
+      }
 
-      const formattedExpenses: Expense[] = data.map(expense => ({
+      const formattedExpenses: Expense[] = (data || []).map(expense => ({
         id: expense.id,
         amount: expense.amount,
         category: expense.category,
@@ -37,7 +43,9 @@ export const useExpenses = () => {
       setExpenses(formattedExpenses);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Error fetching expenses:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch expenses. Please check your connection.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -59,7 +67,10 @@ export const useExpenses = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase insert error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
 
       const newExpense: Expense = {
         id: data.id,
@@ -72,7 +83,8 @@ export const useExpenses = () => {
       setExpenses(prev => [newExpense, ...prev]);
       return { data: newExpense, error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('Error adding expense:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add expense';
       setError(errorMessage);
       return { error: errorMessage };
     }
@@ -95,7 +107,10 @@ export const useExpenses = () => {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase update error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
 
       const updatedExpense: Expense = {
         id: data.id,
@@ -108,7 +123,8 @@ export const useExpenses = () => {
       setExpenses(prev => prev.map(exp => exp.id === id ? updatedExpense : exp));
       return { data: updatedExpense, error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('Error updating expense:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update expense';
       setError(errorMessage);
       return { error: errorMessage };
     }
@@ -124,12 +140,16 @@ export const useExpenses = () => {
         .eq('id', id)
         .eq('user_id', user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase delete error:', error);
+        throw new Error(`Database error: ${error.message}`);
+      }
 
       setExpenses(prev => prev.filter(exp => exp.id !== id));
       return { error: null };
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred';
+      console.error('Error deleting expense:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete expense';
       setError(errorMessage);
       return { error: errorMessage };
     }
