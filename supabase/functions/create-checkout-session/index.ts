@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
     formData.append('success_url', `${origin}/success?session_id={CHECKOUT_SESSION_ID}`);
     formData.append('cancel_url', `${origin}/pricing`);
     formData.append('billing_address_collection', 'required');
-    formData.append('automatic_tax[enabled]', 'true');
+    // Removed automatic_tax[enabled] to avoid requiring origin address configuration in Stripe test mode
 
     const stripeResponse = await fetch(stripeApiUrl, {
       method: 'POST',
