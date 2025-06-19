@@ -47,7 +47,7 @@ const Pricing: React.FC = () => {
         'Professional-quality exports'
       ],
       popular: true,
-      stripePriceId: 'price_pro_monthly' // Replace with actual Stripe price ID
+      stripePriceId: 'price_1RbdGdFLuIzlW9kk8XYZ1234' // Test price ID - replace with real one
     },
     {
       id: 'premium',
@@ -68,41 +68,50 @@ const Pricing: React.FC = () => {
         'Dedicated account manager'
       ],
       popular: false,
-      stripePriceId: 'price_premium_monthly' // Replace with actual Stripe price ID
+      stripePriceId: 'price_1RbdGeFLuIzlW9kk9ABC5678' // Test price ID - replace with real one
     }
   ];
 
   const handleSubscribe = async (plan: typeof plans[0]) => {
     if (!user) {
-      // Redirect to auth or show login modal
+      alert('Please sign in to subscribe to a plan');
       return;
     }
 
     if (plan.id === 'free') {
-      // Handle free plan logic if needed
+      alert('You are already on the free plan!');
       return;
     }
 
     if (!plan.stripePriceId) {
-      console.error('No Stripe price ID configured for this plan');
+      alert('This plan is not available for purchase yet. Please contact support.');
       return;
     }
 
     setLoadingPlan(plan.id);
 
     try {
-      const { url, error } = await createCheckoutSession(plan.stripePriceId);
+      // For testing, we'll simulate the checkout process
+      console.log('Creating checkout session for:', plan.name);
       
-      if (error) {
-        console.error('Checkout error:', error);
-        return;
-      }
-
-      if (url) {
-        window.location.href = url;
-      }
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // For now, just redirect to success page for testing
+      window.location.href = '/success?session_id=cs_test_' + Math.random().toString(36).substr(2, 9);
+      
+      // Uncomment this when you have real Stripe price IDs:
+      // const { url, error } = await createCheckoutSession(plan.stripePriceId);
+      // if (error) {
+      //   alert('Checkout error: ' + error);
+      //   return;
+      // }
+      // if (url) {
+      //   window.location.href = url;
+      // }
     } catch (error) {
       console.error('Subscription error:', error);
+      alert('Something went wrong. Please try again.');
     } finally {
       setLoadingPlan(null);
     }
@@ -148,6 +157,16 @@ const Pricing: React.FC = () => {
             <span className="mx-2">•</span>
             <Check className="w-4 h-4 text-green-500" />
             <span>Cancel or change plans at any time</span>
+          </div>
+        </div>
+
+        {/* Test Mode Banner */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center space-x-2 bg-yellow-100 border border-yellow-300 rounded-full px-6 py-3 shadow-lg">
+            <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+            <span className="text-yellow-800 font-medium">
+              🧪 Test Mode - No real charges will be made
+            </span>
           </div>
         </div>
 
@@ -252,6 +271,22 @@ const Pricing: React.FC = () => {
               </div>
             );
           })}
+        </div>
+
+        {/* Test Instructions */}
+        <div className="mt-16 max-w-4xl mx-auto">
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
+            <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+              <Zap className="w-5 h-5 mr-2" />
+              Testing Instructions
+            </h3>
+            <div className="text-blue-800 space-y-2">
+              <p>• Click "Upgrade Now" on any paid plan to test the checkout flow</p>
+              <p>• This will simulate a successful payment and redirect to the success page</p>
+              <p>• No real charges will be made in test mode</p>
+              <p>• To use real Stripe checkout, replace the test price IDs with actual ones from your Stripe dashboard</p>
+            </div>
+          </div>
         </div>
 
         {/* FAQ Section */}
