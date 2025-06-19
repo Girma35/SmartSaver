@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Sparkles, TrendingUp, DollarSign } from 'lucide-react';
 import { ChatMessage } from '../types';
-import { generateAIResponse } from '../utils/mockAI';
+import { generateAIFinancialAdvice } from '../services/aiService';
 import { useExpenses } from '../hooks/useExpenses';
 
 const AIAssistant: React.FC = () => {
@@ -9,7 +9,7 @@ const AIAssistant: React.FC = () => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: '1',
-      text: "Hello! I'm your AI financial assistant. I can help you analyze your spending, create budgets, and provide personalized financial advice. What would you like to know about your finances?",
+      text: "Hello! I'm your AI financial advisor powered by advanced analytics. I can analyze your spending patterns, create personalized budget plans, and provide data-driven financial advice. What would you like to explore about your finances?",
       isUser: false,
       timestamp: new Date()
     }
@@ -41,9 +41,9 @@ const AIAssistant: React.FC = () => {
     setInputText('');
     setIsLoading(true);
 
-    // Simulate AI processing delay
-    setTimeout(() => {
-      const aiResponse = generateAIResponse(inputText, expenses);
+    try {
+      const aiResponse = await generateAIFinancialAdvice(inputText, expenses);
+      
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         text: aiResponse,
@@ -52,144 +52,211 @@ const AIAssistant: React.FC = () => {
       };
 
       setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      const errorMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        text: "I apologize, but I'm having trouble processing your request right now. Please try again in a moment, or ask a different question about your finances.",
+        isUser: false,
+        timestamp: new Date()
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   const quickPrompts = [
-    "How can I reduce my spending?",
-    "Create a budget plan for me",
+    "Analyze my spending patterns",
+    "Create a personalized budget plan",
+    "How can I save more money?",
     "What's my biggest expense category?",
-    "How much should I save each month?"
+    "Help me reduce my spending",
+    "Show me savings projections"
   ];
 
   const handleQuickPrompt = (prompt: string) => {
     setInputText(prompt);
   };
 
+  // Calculate financial summary for display
+  const totalSpent = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+  const categoriesCount = new Set(expenses.map(exp => exp.category)).size;
+  const recentExpenses = expenses.slice(0, 5);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
               <Sparkles className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900">AI Financial Assistant</h1>
+            <h1 className="text-3xl font-bold text-gray-900">AI Financial Advisor</h1>
           </div>
-          <p className="text-gray-600">Get personalized financial advice and insights</p>
+          <p className="text-gray-600">Get personalized financial insights powered by advanced AI analytics</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
-          {/* Chat Messages */}
-          <div className="h-96 overflow-y-auto p-6 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex items-start space-x-3 ${
-                  message.isUser ? 'flex-row-reverse space-x-reverse' : ''
-                }`}
-              >
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                  message.isUser 
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-500' 
-                    : 'bg-gray-100'
-                }`}>
-                  {message.isUser ? (
-                    <User className="w-4 h-4 text-white" />
-                  ) : (
-                    <Bot className="w-4 h-4 text-gray-600" />
-                  )}
-                </div>
-                
-                <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
-                  message.isUser
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-900'
-                }`}>
-                  <p className="text-sm">{message.text}</p>
-                  <p className={`text-xs mt-1 ${
-                    message.isUser ? 'text-purple-100' : 'text-gray-500'
-                  }`}>
-                    {message.timestamp.toLocaleTimeString()}
-                  </p>
-                </div>
-              </div>
-            ))}
-            
-            {isLoading && (
-              <div className="flex items-start space-x-3">
-                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-                  <Bot className="w-4 h-4 text-gray-600" />
-                </div>
-                <div className="bg-gray-100 px-4 py-3 rounded-2xl">
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Chat Interface */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+              {/* Chat Messages */}
+              <div className="h-96 overflow-y-auto p-6 space-y-4">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex items-start space-x-3 ${
+                      message.isUser ? 'flex-row-reverse space-x-reverse' : ''
+                    }`}
+                  >
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      message.isUser 
+                        ? 'bg-gradient-to-r from-purple-500 to-blue-500' 
+                        : 'bg-gray-100'
+                    }`}>
+                      {message.isUser ? (
+                        <User className="w-4 h-4 text-white" />
+                      ) : (
+                        <Bot className="w-4 h-4 text-gray-600" />
+                      )}
+                    </div>
+                    
+                    <div className={`max-w-xs lg:max-w-md px-4 py-3 rounded-2xl ${
+                      message.isUser
+                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-900'
+                    }`}>
+                      <div className={`text-sm whitespace-pre-line ${
+                        message.isUser ? 'text-white' : 'text-gray-900'
+                      }`}>
+                        {message.text}
+                      </div>
+                      <p className={`text-xs mt-2 ${
+                        message.isUser ? 'text-purple-100' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp.toLocaleTimeString()}
+                      </p>
+                    </div>
                   </div>
+                ))}
+                
+                {isLoading && (
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                      <Bot className="w-4 h-4 text-gray-600" />
+                    </div>
+                    <div className="bg-gray-100 px-4 py-3 rounded-2xl">
+                      <div className="flex space-x-1">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Quick Prompts */}
+              <div className="border-t bg-gray-50 px-6 py-4">
+                <p className="text-sm text-gray-600 mb-3">Quick questions:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {quickPrompts.map((prompt, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleQuickPrompt(prompt)}
+                      className="text-sm bg-white text-gray-700 px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors duration-200 text-left"
+                    >
+                      {prompt}
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* Quick Prompts */}
-          <div className="border-t bg-gray-50 px-6 py-4">
-            <p className="text-sm text-gray-600 mb-3">Quick questions:</p>
-            <div className="flex flex-wrap gap-2">
-              {quickPrompts.map((prompt, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleQuickPrompt(prompt)}
-                  className="text-sm bg-white text-gray-700 px-3 py-2 rounded-lg border hover:bg-gray-50 transition-colors duration-200"
-                >
-                  {prompt}
-                </button>
-              ))}
+              {/* Message Input */}
+              <div className="border-t p-6">
+                <form onSubmit={handleSendMessage} className="flex space-x-4">
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Ask me anything about your finances..."
+                    className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    disabled={isLoading}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!inputText.trim() || isLoading}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                  >
+                    <Send className="w-5 h-5" />
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
 
-          {/* Message Input */}
-          <div className="border-t p-6">
-            <form onSubmit={handleSendMessage} className="flex space-x-4">
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ask me anything about your finances..."
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-                disabled={isLoading}
-              />
-              <button
-                type="submit"
-                disabled={!inputText.trim() || isLoading}
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
-              >
-                <Send className="w-5 h-5" />
-              </button>
-            </form>
-          </div>
-        </div>
+          {/* Financial Summary Sidebar */}
+          <div className="space-y-6">
+            {/* AI Capabilities */}
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                <Sparkles className="w-5 h-5 mr-2 text-purple-500" />
+                AI Capabilities
+              </h3>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li>• Advanced spending pattern analysis</li>
+                <li>• Personalized budget optimization</li>
+                <li>• Savings projection modeling</li>
+                <li>• Category-specific recommendations</li>
+                <li>• Goal-based financial planning</li>
+                <li>• Real-time expense insights</li>
+              </ul>
+            </div>
 
-        {/* AI Features */}
-        <div className="mt-8 grid md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-xl p-6 shadow-lg">
-            <h3 className="font-semibold text-gray-900 mb-3">What I can help with:</h3>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>• Analyze your spending patterns</li>
-              <li>• Create personalized budget plans</li>
-              <li>• Suggest ways to save money</li>
-              <li>• Answer financial questions</li>
-            </ul>
-          </div>
-          
-          <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-6 text-white">
-            <h3 className="font-semibold mb-3">Your Financial Summary:</h3>
-            <div className="space-y-2 text-sm text-purple-100">
-              <p>Total expenses tracked: {expenses.length}</p>
-              <p>Total spent: ${expenses.reduce((sum, exp) => sum + exp.amount, 0).toFixed(2)}</p>
-              <p>Categories: {new Set(expenses.map(exp => exp.category)).size}</p>
+            {/* Your Financial Data */}
+            <div className="bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl p-6 text-white">
+              <h3 className="font-semibold mb-4 flex items-center">
+                <TrendingUp className="w-5 h-5 mr-2" />
+                Your Financial Data
+              </h3>
+              <div className="space-y-3 text-sm text-purple-100">
+                <div className="flex justify-between">
+                  <span>Total Expenses:</span>
+                  <span className="font-semibold text-white">${totalSpent.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Transactions:</span>
+                  <span className="font-semibold text-white">{expenses.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Categories:</span>
+                  <span className="font-semibold text-white">{categoriesCount}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Recent Expenses */}
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="font-semibold text-gray-900 mb-4 flex items-center">
+                <DollarSign className="w-5 h-5 mr-2 text-green-500" />
+                Recent Expenses
+              </h3>
+              {recentExpenses.length === 0 ? (
+                <p className="text-gray-500 text-sm">No expenses tracked yet</p>
+              ) : (
+                <div className="space-y-3">
+                  {recentExpenses.map((expense) => (
+                    <div key={expense.id} className="flex justify-between items-center text-sm">
+                      <div>
+                        <p className="font-medium text-gray-900">{expense.category}</p>
+                        <p className="text-gray-500">{new Date(expense.date).toLocaleDateString()}</p>
+                      </div>
+                      <span className="font-semibold text-gray-900">${expense.amount.toFixed(2)}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
