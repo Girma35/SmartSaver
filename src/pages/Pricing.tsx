@@ -1,328 +1,311 @@
 import React, { useState } from 'react';
-import { Check, Crown, Zap, Shield, TrendingUp, Star, CreditCard } from 'lucide-react';
-import { PricingPlan } from '../types/stripe';
+import { Check, Star, Zap, Crown, ArrowRight, Loader2 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
 import { useSubscription } from '../hooks/useSubscription';
-import { stripePromise } from '../lib/stripe';
+import { createCheckoutSession } from '../services/stripeService';
 
 const Pricing: React.FC = () => {
-  const { subscription, createCheckoutSession } = useSubscription();
-  const [loading, setLoading] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const { subscription, loading: subscriptionLoading } = useSubscription();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
 
-  const plans: PricingPlan[] = [
+  const plans = [
     {
       id: 'free',
-      name: 'Free',
-      description: 'Perfect for getting started with expense tracking',
+      name: 'Free Tier',
       price: 0,
-      interval: 'month',
-      stripePriceId: '',
+      period: 'month',
+      description: 'Great for trying out the platform',
+      icon: Star,
+      color: 'from-gray-500 to-gray-600',
       features: [
-        'Track up to 50 expenses per month',
-        'Basic expense categories',
-        'Simple dashboard',
-        'Email support',
-        'Mobile responsive design'
-      ]
+        'Basic feature access',
+        '5 requests/day',
+        'Simple analytics',
+        'Watermarked exports',
+        'Community support',
+        'Ad-supported experience'
+      ],
+      popular: false,
+      stripePriceId: null
     },
     {
       id: 'pro',
-      name: 'Pro',
-      description: 'Advanced features for serious budgeters',
-      price: 9.99,
-      interval: 'month',
-      popular: true,
-      stripePriceId: 'price_1234567890', // Replace with actual Stripe price ID
+      name: 'Pro Tier',
+      price: 10,
+      period: 'month',
+      description: 'Perfect for power users & small businesses',
+      icon: Zap,
+      color: 'from-purple-500 to-blue-500',
       features: [
-        'Unlimited expense tracking',
-        'Advanced AI financial advisor',
-        'Custom categories and tags',
-        'Detailed analytics and reports',
-        'Budget planning tools',
-        'Export data to CSV/PDF',
+        'Everything in Free, plus:',
+        '50 requests/day (10x more)',
+        'Advanced customization tools',
         'Priority email support',
-        'Goal tracking and projections'
-      ]
+        'Ad-free experience',
+        'Enhanced analytics dashboard',
+        'Professional-quality exports'
+      ],
+      popular: true,
+      stripePriceId: 'price_pro_monthly' // Replace with actual Stripe price ID
     },
     {
       id: 'premium',
-      name: 'Premium',
-      description: 'Complete financial management solution',
-      price: 19.99,
-      interval: 'month',
-      stripePriceId: 'price_0987654321', // Replace with actual Stripe price ID
+      name: 'Premium Tier',
+      price: 20,
+      period: 'month',
+      description: 'Ideal for businesses & developers needing maximum capability',
+      icon: Crown,
+      color: 'from-amber-500 to-orange-500',
       features: [
-        'Everything in Pro',
-        'Multi-account management',
-        'Investment tracking',
-        'Tax preparation assistance',
-        'Financial advisor consultations',
-        'Advanced security features',
-        'API access for integrations',
-        'White-label options',
-        '24/7 phone support'
-      ]
+        'All Pro features, plus:',
+        'Unlimited requests',
+        '24/7 priority chat support',
+        'White-labeling & branding',
+        'Advanced reporting & insights',
+        'Full API access',
+        'Early access to new features',
+        'Dedicated account manager'
+      ],
+      popular: false,
+      stripePriceId: 'price_premium_monthly' // Replace with actual Stripe price ID
     }
   ];
 
-  const handleSubscribe = async (plan: PricingPlan) => {
-    if (plan.price === 0) return; // Free plan
+  const handleSubscribe = async (plan: typeof plans[0]) => {
+    if (!user) {
+      // Redirect to auth or show login modal
+      return;
+    }
 
-    setLoading(plan.id);
-    setError(null);
+    if (plan.id === 'free') {
+      // Handle free plan logic if needed
+      return;
+    }
+
+    if (!plan.stripePriceId) {
+      console.error('No Stripe price ID configured for this plan');
+      return;
+    }
+
+    setLoadingPlan(plan.id);
 
     try {
-      const { data, error } = await createCheckoutSession(plan.stripePriceId);
+      const { url, error } = await createCheckoutSession(plan.stripePriceId);
       
       if (error) {
-        setError(error);
+        console.error('Checkout error:', error);
         return;
       }
 
-      const stripe = await stripePromise;
-      if (!stripe) {
-        setError('Stripe failed to load');
-        return;
+      if (url) {
+        window.location.href = url;
       }
-
-      const { error: redirectError } = await stripe.redirectToCheckout({
-        sessionId: data.sessionId
-      });
-
-      if (redirectError) {
-        setError(redirectError.message);
-      }
-    } catch (err) {
-      setError('Failed to start checkout process');
+    } catch (error) {
+      console.error('Subscription error:', error);
     } finally {
-      setLoading(null);
+      setLoadingPlan(null);
     }
   };
 
+  const getCurrentPlan = () => {
+    if (!subscription) return 'free';
+    return subscription.plan_name.toLowerCase();
+  };
+
   const isCurrentPlan = (planId: string) => {
-    if (planId === 'free' && !subscription) return true;
-    if (subscription && planId === 'pro' && subscription.plan_name === 'Pro') return true;
-    if (subscription && planId === 'premium' && subscription.plan_name === 'Premium') return true;
-    return false;
+    return getCurrentPlan() === planId;
+  };
+
+  const getButtonText = (plan: typeof plans[0]) => {
+    if (loadingPlan === plan.id) return 'Processing...';
+    if (isCurrentPlan(plan.id)) return 'Current Plan';
+    if (plan.id === 'free') return 'Get Started Free';
+    return 'Upgrade Now';
+  };
+
+  const getButtonDisabled = (plan: typeof plans[0]) => {
+    return loadingPlan !== null || isCurrentPlan(plan.id);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 py-12">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center space-x-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
-              <Crown className="w-6 h-6 text-white" />
-            </div>
-            <h1 className="text-4xl font-bold text-gray-900">Choose Your Plan</h1>
-          </div>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Unlock powerful features to take complete control of your financial future. 
-            Start free and upgrade anytime.
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            Flexible Pricing Plans for
+            <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              {' '}Every Need
+            </span>
+          </h1>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            Choose the perfect subscription plan to match your needs and budget
           </p>
+          <div className="flex items-center justify-center space-x-2 text-sm text-gray-500">
+            <Check className="w-4 h-4 text-green-500" />
+            <span>Start free, upgrade anytime</span>
+            <span className="mx-2">•</span>
+            <Check className="w-4 h-4 text-green-500" />
+            <span>Cancel or change plans at any time</span>
+          </div>
         </div>
 
         {/* Current Subscription Status */}
-        {subscription && (
-          <div className="bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl p-6 text-white mb-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Crown className="w-6 h-6" />
-                <div>
-                  <h3 className="font-semibold text-lg">Active Subscription</h3>
-                  <p className="text-green-100">
-                    {subscription.plan_name} Plan - 
-                    {subscription.cancel_at_period_end 
-                      ? ` Cancels on ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                      : ` Renews on ${new Date(subscription.current_period_end).toLocaleDateString()}`
-                    }
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5" />
-                <span className="text-sm font-medium">Protected</span>
-              </div>
+        {user && !subscriptionLoading && (
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center space-x-2 bg-white rounded-full px-6 py-3 shadow-lg border">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-gray-700 font-medium">
+                Current Plan: {getCurrentPlan().charAt(0).toUpperCase() + getCurrentPlan().slice(1)}
+              </span>
             </div>
-          </div>
-        )}
-
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8">
-            <p className="text-red-700">{error}</p>
           </div>
         )}
 
         {/* Pricing Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
-          {plans.map((plan) => (
-            <div
-              key={plan.id}
-              className={`relative bg-white rounded-2xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-xl ${
-                plan.popular ? 'ring-2 ring-purple-500 scale-105' : ''
-              }`}
-            >
-              {plan.popular && (
-                <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-purple-500 to-blue-500 text-white text-center py-2 text-sm font-semibold">
-                  <Star className="w-4 h-4 inline mr-1" />
-                  Most Popular
-                </div>
-              )}
-
-              <div className={`p-8 ${plan.popular ? 'pt-12' : ''}`}>
-                {/* Plan Header */}
-                <div className="text-center mb-8">
-                  <div className={`w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center ${
-                    plan.id === 'free' 
-                      ? 'bg-gray-100' 
-                      : plan.id === 'pro' 
-                        ? 'bg-gradient-to-r from-purple-500 to-blue-500' 
-                        : 'bg-gradient-to-r from-indigo-500 to-purple-600'
-                  }`}>
-                    {plan.id === 'free' && <Zap className="w-8 h-8 text-gray-600" />}
-                    {plan.id === 'pro' && <TrendingUp className="w-8 h-8 text-white" />}
-                    {plan.id === 'premium' && <Crown className="w-8 h-8 text-white" />}
+        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          {plans.map((plan) => {
+            const Icon = plan.icon;
+            const isPopular = plan.popular;
+            const isCurrent = isCurrentPlan(plan.id);
+            
+            return (
+              <div
+                key={plan.id}
+                className={`relative bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 ${
+                  isPopular ? 'ring-2 ring-purple-500 ring-opacity-50' : ''
+                } ${isCurrent ? 'ring-2 ring-green-500 ring-opacity-50' : ''}`}
+              >
+                {/* Popular Badge */}
+                {isPopular && (
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+                      Most Popular
+                    </div>
                   </div>
-                  
-                  <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
-                  <p className="text-gray-600 mb-4">{plan.description}</p>
-                  
-                  <div className="flex items-baseline justify-center">
-                    <span className="text-4xl font-bold text-gray-900">
-                      ${plan.price}
-                    </span>
-                    {plan.price > 0 && (
-                      <span className="text-gray-500 ml-1">/{plan.interval}</span>
-                    )}
-                  </div>
-                </div>
+                )}
 
-                {/* Features */}
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature, index) => (
-                    <li key={index} className="flex items-start space-x-3">
-                      <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <Check className="w-3 h-3 text-green-600" />
+                {/* Current Plan Badge */}
+                {isCurrent && (
+                  <div className="absolute -top-4 right-4">
+                    <div className="bg-green-500 text-white px-4 py-2 rounded-full text-sm font-semibold shadow-lg">
+                      Current
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-8">
+                  {/* Plan Header */}
+                  <div className="text-center mb-8">
+                    <div className={`w-16 h-16 bg-gradient-to-r ${plan.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                      <Icon className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h3>
+                    <div className="mb-4">
+                      <span className="text-4xl font-bold text-gray-900">${plan.price}</span>
+                      <span className="text-gray-600">/{plan.period}</span>
+                    </div>
+                    <p className="text-gray-600 text-sm italic">{plan.description}</p>
+                  </div>
+
+                  {/* Features List */}
+                  <div className="space-y-4 mb-8">
+                    {plan.features.map((feature, index) => (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className="flex-shrink-0 w-5 h-5 bg-green-100 rounded-full flex items-center justify-center mt-0.5">
+                          <Check className="w-3 h-3 text-green-600" />
+                        </div>
+                        <span className={`text-gray-700 ${
+                          feature.includes('Everything in') || feature.includes('All Pro features') 
+                            ? 'font-semibold text-purple-700' 
+                            : ''
+                        }`}>
+                          {feature}
+                        </span>
                       </div>
-                      <span className="text-gray-700 text-sm leading-relaxed">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
+                    ))}
+                  </div>
 
-                {/* CTA Button */}
-                <button
-                  onClick={() => handleSubscribe(plan)}
-                  disabled={loading === plan.id || isCurrentPlan(plan.id)}
-                  className={`w-full py-4 px-6 rounded-xl font-semibold transition-all duration-200 flex items-center justify-center space-x-2 ${
-                    isCurrentPlan(plan.id)
-                      ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-                      : plan.id === 'free'
-                        ? 'bg-gray-900 text-white hover:bg-gray-800 transform hover:scale-105 shadow-lg hover:shadow-xl'
-                        : 'bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 transform hover:scale-105 shadow-lg hover:shadow-xl'
-                  } ${loading === plan.id ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                  {loading === plan.id ? (
-                    <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Processing...</span>
-                    </>
-                  ) : isCurrentPlan(plan.id) ? (
-                    <>
-                      <Check className="w-5 h-5" />
-                      <span>Current Plan</span>
-                    </>
-                  ) : (
-                    <>
-                      <CreditCard className="w-5 h-5" />
-                      <span>{plan.price === 0 ? 'Get Started Free' : `Subscribe to ${plan.name}`}</span>
-                    </>
-                  )}
-                </button>
+                  {/* CTA Button */}
+                  <button
+                    onClick={() => handleSubscribe(plan)}
+                    disabled={getButtonDisabled(plan)}
+                    className={`w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all duration-200 flex items-center justify-center space-x-2 ${
+                      isCurrent
+                        ? 'bg-green-100 text-green-700 cursor-default'
+                        : plan.id === 'free'
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`
+                    }`}
+                  >
+                    {loadingPlan === plan.id ? (
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <span>{getButtonText(plan)}</span>
+                        {!isCurrent && plan.id !== 'free' && <ArrowRight className="w-5 h-5" />}
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Features Comparison */}
-        <div className="bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
-            Compare All Features
-          </h2>
-          
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left py-4 px-6 font-semibold text-gray-900">Features</th>
-                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Free</th>
-                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Pro</th>
-                  <th className="text-center py-4 px-6 font-semibold text-gray-900">Premium</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  { feature: 'Monthly Expense Limit', free: '50', pro: 'Unlimited', premium: 'Unlimited' },
-                  { feature: 'AI Financial Advisor', free: 'Basic', pro: 'Advanced', premium: 'Expert' },
-                  { feature: 'Custom Categories', free: '❌', pro: '✅', premium: '✅' },
-                  { feature: 'Data Export', free: '❌', pro: '✅', premium: '✅' },
-                  { feature: 'Goal Tracking', free: '❌', pro: '✅', premium: '✅' },
-                  { feature: 'Investment Tracking', free: '❌', pro: '❌', premium: '✅' },
-                  { feature: 'Multi-Account Support', free: '❌', pro: '❌', premium: '✅' },
-                  { feature: 'Priority Support', free: '❌', pro: '✅', premium: '✅' },
-                  { feature: 'Phone Support', free: '❌', pro: '❌', premium: '✅' }
-                ].map((row, index) => (
-                  <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-4 px-6 font-medium text-gray-900">{row.feature}</td>
-                    <td className="py-4 px-6 text-center text-gray-600">{row.free}</td>
-                    <td className="py-4 px-6 text-center text-gray-600">{row.pro}</td>
-                    <td className="py-4 px-6 text-center text-gray-600">{row.premium}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+            );
+          })}
         </div>
 
         {/* FAQ Section */}
-        <div className="mt-16 bg-white rounded-2xl shadow-lg p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">
+        <div className="mt-20 max-w-4xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
             Frequently Asked Questions
           </h2>
-          
           <div className="grid md:grid-cols-2 gap-8">
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Can I change plans anytime?</h3>
-              <p className="text-gray-600 text-sm">
-                Yes! You can upgrade or downgrade your plan at any time. Changes take effect immediately, 
-                and we'll prorate any billing differences.
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="font-semibold text-gray-900 mb-3">Can I change plans anytime?</h3>
+              <p className="text-gray-600">
+                Yes! You can upgrade, downgrade, or cancel your subscription at any time. 
+                Changes take effect at your next billing cycle.
               </p>
             </div>
-            
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Is my payment information secure?</h3>
-              <p className="text-gray-600 text-sm">
-                Absolutely. We use Stripe for payment processing, which is PCI DSS compliant and 
-                trusted by millions of businesses worldwide.
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="font-semibold text-gray-900 mb-3">What payment methods do you accept?</h3>
+              <p className="text-gray-600">
+                We accept all major credit cards, debit cards, and digital wallets through 
+                our secure Stripe payment processing.
               </p>
             </div>
-            
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">What happens if I cancel?</h3>
-              <p className="text-gray-600 text-sm">
-                You can cancel anytime. You'll continue to have access to premium features until 
-                the end of your billing period, then automatically switch to the free plan.
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="font-semibold text-gray-900 mb-3">Is there a free trial?</h3>
+              <p className="text-gray-600">
+                Our Free Tier gives you access to core features with no time limit. 
+                Upgrade anytime to unlock more powerful capabilities.
               </p>
             </div>
-            
-            <div>
-              <h3 className="font-semibold text-gray-900 mb-2">Do you offer refunds?</h3>
-              <p className="text-gray-600 text-sm">
-                We offer a 30-day money-back guarantee. If you're not satisfied within the first 
-                30 days, contact support for a full refund.
+            <div className="bg-white rounded-xl p-6 shadow-lg">
+              <h3 className="font-semibold text-gray-900 mb-3">Do you offer refunds?</h3>
+              <p className="text-gray-600">
+                We offer a 30-day money-back guarantee for all paid plans. 
+                Contact support if you're not satisfied with your subscription.
               </p>
             </div>
+          </div>
+        </div>
+
+        {/* Bottom CTA */}
+        <div className="mt-20 text-center">
+          <div className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-12 text-white">
+            <h2 className="text-3xl font-bold mb-4">
+              Ready to Transform Your Financial Life?
+            </h2>
+            <p className="text-purple-100 text-lg mb-8 max-w-2xl mx-auto">
+              Join thousands of users who have taken control of their finances with our powerful tools and AI-driven insights.
+            </p>
+            <button
+              onClick={() => handleSubscribe(plans[1])} // Pro plan
+              className="bg-white text-purple-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-gray-50 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+            >
+              Start Your Journey Today
+            </button>
           </div>
         </div>
       </div>

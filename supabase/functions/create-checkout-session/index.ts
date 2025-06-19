@@ -1,13 +1,12 @@
 /*
-  # Create Stripe Checkout Session Edge Function
+  # Create Stripe Checkout Session
   
   This function creates a Stripe checkout session for subscription payments.
-  It handles both new subscriptions and plan changes.
+  It handles the creation of checkout sessions and redirects users to Stripe's hosted checkout page.
 */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import Stripe from 'https://esm.sh/stripe@14.15.0'
+import Stripe from 'npm:stripe@14.21.0'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,22 +19,25 @@ serve(async (req) => {
   }
 
   try {
-    const { priceId, userId, userEmail } = await req.json()
-
-    // Initialize Stripe
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
       apiVersion: '2023-10-16',
     })
 
-    // Initialize Supabase
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const { priceId } = await req.json()
+
+    if (!priceId) {
+      throw new Error('Price ID is required')
+    }
+
+    // Get the authorization header
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      throw new Error('No authorization header')
+    }
 
     // Create checkout session
     const session = await stripe.checkout.sessions.create({
-      customer_email: userEmail,
+      billing_address_collection: 'required',
       line_items: [
         {
           price: priceId,
@@ -43,15 +45,13 @@ serve(async (req) => {
         },
       ],
       mode: 'subscription',
-      success_url: `${req.headers.get('origin')}/billing?success=true`,
-      cancel_url: `${req.headers.get('origin')}/pricing?canceled=true`,
-      metadata: {
-        user_id: userId,
-      },
+      success_url: `${req.headers.get('origin')}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.get('origin')}/pricing`,
+      automatic_tax: { enabled: true },
     })
 
     return new Response(
-      JSON.stringify({ sessionId: session.id, url: session.url }),
+      JSON.stringify({ url: session.url }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,

@@ -7,7 +7,7 @@ import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistant';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
-import Billing from './pages/Billing';
+import Success from './pages/Success';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
@@ -25,6 +25,11 @@ function App() {
         </div>
       </div>
     );
+  }
+
+  // Handle success page routing
+  if (window.location.pathname === '/success') {
+    return <Success />;
   }
 
   if (!user) {
@@ -49,8 +54,6 @@ function App() {
         return <Profile />;
       case 'pricing':
         return <Pricing />;
-      case 'billing':
-        return <Billing />;
       default:
         return <Landing onGetStarted={handleGetStarted} />;
     }
