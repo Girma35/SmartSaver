@@ -5,6 +5,8 @@
   It handles the creation of checkout sessions and redirects users to Stripe's hosted checkout page.
 */
 
+import { createClient } from 'npm:@supabase/supabase-js@2'
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
@@ -27,7 +29,8 @@ Deno.serve(async (req: Request) => {
     // Get Stripe secret key from environment
     const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
     if (!stripeSecretKey) {
-      throw new Error('STRIPE_SECRET_KEY environment variable is not set');
+      console.error('STRIPE_SECRET_KEY not found in environment');
+      throw new Error('Stripe configuration is missing');
     }
 
     // Parse request body
@@ -37,6 +40,8 @@ Deno.serve(async (req: Request) => {
       throw new Error('Price ID is required');
     }
 
+    console.log('Creating checkout session for price:', priceId);
+
     // Get the authorization header to identify the user
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
@@ -45,19 +50,34 @@ Deno.serve(async (req: Request) => {
 
     // Create Supabase client to get user info
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseAnonKey) {
       throw new Error('Supabase environment variables are not set');
     }
 
-    // For now, we'll create a simple checkout session without user verification
-    // In production, you'd want to verify the user through Supabase
+    // Create Supabase client with user's auth token
+    const supabaseClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: { Authorization: authHeader },
+      },
+    });
+
+    // Get the authenticated user
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     
-    // Create checkout session using Stripe API directly
-    const stripeApiUrl = 'https://api.stripe.com/v1/checkout/sessions';
-    
+    if (userError || !user) {
+      console.error('User authentication error:', userError);
+      throw new Error('User not authenticated');
+    }
+
+    console.log('Authenticated user:', user.email);
+
+    // Get origin for redirect URLs
     const origin = req.headers.get('origin') || 'http://localhost:5173';
+    
+    // Create checkout session using Stripe API directly with fetch
+    const stripeApiUrl = 'https://api.stripe.com/v1/checkout/sessions';
     
     const formData = new URLSearchParams();
     formData.append('mode', 'subscription');
@@ -66,24 +86,43 @@ Deno.serve(async (req: Request) => {
     formData.append('success_url', `${origin}/success?session_id={CHECKOUT_SESSION_ID}`);
     formData.append('cancel_url', `${origin}/pricing`);
     formData.append('billing_address_collection', 'required');
-    // Removed automatic_tax[enabled] to avoid requiring origin address configuration in Stripe test mode
+    formData.append('customer_email', user.email || '');
+    formData.append('metadata[user_id]', user.id);
+    formData.append('subscription_data[metadata][user_id]', user.id);
+    // Removed automatic_tax to avoid origin address requirement in test mode
+
+    console.log('Making request to Stripe API...');
 
     const stripeResponse = await fetch(stripeApiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${stripeSecretKey}`,
         'Content-Type': 'application/x-www-form-urlencoded',
+        'Stripe-Version': '2023-10-16',
       },
       body: formData.toString(),
     });
 
+    console.log('Stripe response status:', stripeResponse.status);
+
     if (!stripeResponse.ok) {
       const errorText = await stripeResponse.text();
-      console.error('Stripe API error:', errorText);
-      throw new Error(`Stripe API error: ${stripeResponse.status} - ${errorText}`);
+      console.error('Stripe API error response:', errorText);
+      
+      let errorMessage = 'Stripe API error';
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error?.message || errorMessage;
+      } catch (e) {
+        // If we can't parse the error, use the raw text
+        errorMessage = errorText;
+      }
+      
+      throw new Error(`Stripe API error: ${stripeResponse.status} - ${errorMessage}`);
     }
 
     const session = await stripeResponse.json();
+    console.log('Checkout session created successfully:', session.id);
 
     return new Response(
       JSON.stringify({ url: session.url }),
