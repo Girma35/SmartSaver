@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { User, Mail, Calendar, Settings, Edit3, Save, X, Camera, Shield, Bell, CreditCard, Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { User, Mail, Calendar, Settings, Edit3, Save, X, Camera, Shield, Bell, CreditCard, Upload, CheckCircle, AlertCircle, Key, Smartphone } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useExpenses } from '../hooks/useExpenses';
 import { useProfile } from '../hooks/useProfile';
@@ -11,6 +11,10 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [show2FAModal, setShow2FAModal] = useState(false);
+  const [twoFactorStep, setTwoFactorStep] = useState<'setup' | 'verify' | 'success'>('setup');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [formData, setFormData] = useState({
@@ -46,7 +50,7 @@ const Profile: React.FC = () => {
   const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
   const categoriesUsed = new Set(expenses.map(exp => exp.category)).size;
   const joinDate = user?.created_at ? new Date(user.created_at) : new Date();
-  const daysActive = Math.floor((new Date().getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 24));
+  const daysActive = Math.floor((new Date().getTime() - joinDate.getTime()) / (1000 * 60 * 60 * 1000));
 
   const handleInputChange = (field: string, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -141,6 +145,35 @@ const Profile: React.FC = () => {
     handleInputChange('financial_goals', updatedGoals);
   };
 
+  const handle2FASetup = () => {
+    setShow2FAModal(true);
+    setTwoFactorStep('setup');
+    // Generate a mock QR code URL for demonstration
+    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/FinanceFlow:${user?.email}?secret=JBSWY3DPEHPK3PXP&issuer=FinanceFlow`);
+  };
+
+  const verify2FACode = () => {
+    // In a real implementation, this would verify the code with your backend
+    if (verificationCode.length === 6) {
+      setTwoFactorStep('success');
+      handleInputChange('two_factor_enabled', true);
+      setTimeout(() => {
+        setShow2FAModal(false);
+        setMessage({ type: 'success', text: 'Two-Factor Authentication enabled successfully!' });
+        setVerificationCode('');
+      }, 2000);
+    } else {
+      setMessage({ type: 'error', text: 'Please enter a valid 6-digit code' });
+    }
+  };
+
+  const disable2FA = () => {
+    if (confirm('Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.')) {
+      handleInputChange('two_factor_enabled', false);
+      setMessage({ type: 'success', text: 'Two-Factor Authentication disabled' });
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -195,9 +228,17 @@ const Profile: React.FC = () => {
                       {profile?.display_name || 'User'}
                     </h1>
                     <p className="text-gray-600 mb-2">{user?.email}</p>
-                    <p className="text-gray-500 text-sm">
-                      Member since {joinDate.toLocaleDateString()}
-                    </p>
+                    <div className="flex items-center space-x-4">
+                      <p className="text-gray-500 text-sm">
+                        Member since {joinDate.toLocaleDateString()}
+                      </p>
+                      {formData.two_factor_enabled && (
+                        <div className="flex items-center space-x-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                          <Shield className="w-3 h-3" />
+                          <span>2FA Enabled</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="mt-4 md:mt-0">
@@ -448,12 +489,27 @@ const Profile: React.FC = () => {
                     <Shield className="w-5 h-5 text-gray-600" />
                     <div>
                       <p className="font-medium text-gray-900">Two-Factor Authentication</p>
-                      <p className="text-sm text-gray-600">Add an extra layer of security</p>
+                      <p className="text-sm text-gray-600">Add an extra layer of security to your account</p>
                     </div>
                   </div>
-                  <button className="text-purple-600 hover:text-purple-700 font-medium">
-                    {formData.two_factor_enabled ? 'Enabled' : 'Enable'}
-                  </button>
+                  <div className="flex items-center space-x-3">
+                    {formData.two_factor_enabled && (
+                      <div className="flex items-center space-x-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                        <CheckCircle className="w-3 h-3" />
+                        <span>Enabled</span>
+                      </div>
+                    )}
+                    <button 
+                      onClick={formData.two_factor_enabled ? disable2FA : handle2FASetup}
+                      className={`font-medium ${
+                        formData.two_factor_enabled 
+                          ? 'text-red-600 hover:text-red-700' 
+                          : 'text-purple-600 hover:text-purple-700'
+                      }`}
+                    >
+                      {formData.two_factor_enabled ? 'Disable' : 'Enable'}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -482,6 +538,42 @@ const Profile: React.FC = () => {
                   <span className="font-semibold text-gray-900">{categoriesUsed}</span>
                 </div>
               </div>
+            </div>
+
+            {/* Security Status */}
+            <div className={`rounded-xl p-6 text-white ${
+              formData.two_factor_enabled 
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
+                : 'bg-gradient-to-r from-orange-500 to-red-500'
+            }`}>
+              <h3 className="font-semibold mb-4 flex items-center">
+                <Shield className="w-5 h-5 mr-2" />
+                Security Status
+              </h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span>Password Protection</span>
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Two-Factor Auth</span>
+                  {formData.two_factor_enabled ? (
+                    <CheckCircle className="w-5 h-5" />
+                  ) : (
+                    <X className="w-5 h-5" />
+                  )}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span>Email Verified</span>
+                  <CheckCircle className="w-5 h-5" />
+                </div>
+              </div>
+              <p className="text-sm mt-4 opacity-90">
+                {formData.two_factor_enabled 
+                  ? 'Your account is well protected!' 
+                  : 'Consider enabling 2FA for better security'
+                }
+              </p>
             </div>
 
             {/* Achievement Badges */}
@@ -519,6 +611,17 @@ const Profile: React.FC = () => {
                     </div>
                   </div>
                 )}
+                {formData.two_factor_enabled && (
+                  <div className="flex items-center space-x-3">
+                    <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+                      <span className="text-sm">🔒</span>
+                    </div>
+                    <div>
+                      <p className="font-medium">Security Expert</p>
+                      <p className="text-sm text-purple-100">Enabled 2FA protection</p>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -531,7 +634,7 @@ const Profile: React.FC = () => {
                   <span className="text-gray-700">Change Email</span>
                 </button>
                 <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3">
-                  <Shield className="w-4 h-4 text-gray-600" />
+                  <Key className="w-4 h-4 text-gray-600" />
                   <span className="text-gray-700">Change Password</span>
                 </button>
                 <button 
@@ -545,6 +648,81 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* 2FA Setup Modal */}
+        {show2FAModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+              {twoFactorStep === 'setup' && (
+                <>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Smartphone className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900 mb-2">Enable Two-Factor Authentication</h3>
+                    <p className="text-gray-600">Scan this QR code with your authenticator app</p>
+                  </div>
+
+                  <div className="text-center mb-6">
+                    <img 
+                      src={qrCodeUrl} 
+                      alt="QR Code" 
+                      className="mx-auto mb-4 border rounded-lg"
+                    />
+                    <p className="text-sm text-gray-500 mb-4">
+                      Use Google Authenticator, Authy, or any TOTP app
+                    </p>
+                  </div>
+
+                  <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Enter verification code from your app:
+                    </label>
+                    <input
+                      type="text"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 text-center text-lg font-mono"
+                      placeholder="000000"
+                      maxLength={6}
+                    />
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={() => setShow2FAModal(false)}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={verify2FACode}
+                      disabled={verificationCode.length !== 6}
+                      className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+                    >
+                      Verify
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {twoFactorStep === 'success' && (
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <CheckCircle className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
+                  <p className="text-gray-600 mb-6">Two-Factor Authentication has been enabled for your account.</p>
+                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
+                    <p className="text-green-700 text-sm">
+                      Your account is now more secure. You'll need to enter a code from your authenticator app when signing in.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
