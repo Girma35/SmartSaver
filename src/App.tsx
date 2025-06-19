@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import AddExpense from './pages/AddExpense';
 import Dashboard from './pages/Dashboard';
 import AIAssistant from './pages/AIAssistant';
+import Profile from './pages/Profile';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
@@ -42,6 +43,8 @@ function App() {
         return <Dashboard />;
       case 'ai':
         return <AIAssistant />;
+      case 'profile':
+        return <Profile />;
       default:
         return <Landing onGetStarted={handleGetStarted} />;
     }

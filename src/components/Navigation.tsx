@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Plus, BarChart3, MessageCircle, LogOut } from 'lucide-react';
+import { Home, Plus, BarChart3, MessageCircle, LogOut, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface NavigationProps {
@@ -15,6 +15,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     { id: 'add', label: 'Add Expense', icon: Plus },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'ai', label: 'AI Assistant', icon: MessageCircle },
+    { id: 'profile', label: 'Profile', icon: User },
   ];
 
   const handleSignOut = async () => {
@@ -56,7 +57,15 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
             })}
             
             <div className="flex items-center space-x-4 ml-4 pl-4 border-l">
-              <span className="text-sm text-gray-600">{user?.email}</span>
+              <div className="flex items-center space-x-3">
+                <img 
+                  src="/photo_2025-05-19_22-40-08.jpg" 
+                  alt="Profile"
+                  className="w-8 h-8 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-purple-300 transition-all duration-200"
+                  onClick={() => onPageChange('profile')}
+                />
+                <span className="text-sm text-gray-600">{user?.email}</span>
+              </div>
               <button
                 onClick={handleSignOut}
                 className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
@@ -71,7 +80,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
       
       {/* Mobile Navigation */}
       <div className="md:hidden bg-white border-t">
-        <div className="grid grid-cols-4 gap-1 p-2">
+        <div className="grid grid-cols-5 gap-1 p-2">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -92,7 +101,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
         </div>
         
         <div className="border-t p-4 flex items-center justify-between">
-          <span className="text-sm text-gray-600">{user?.email}</span>
+          <div className="flex items-center space-x-3">
+            <img 
+              src="/photo_2025-05-19_22-40-08.jpg" 
+              alt="Profile"
+              className="w-8 h-8 rounded-lg object-cover"
+            />
+            <span className="text-sm text-gray-600">{user?.email}</span>
+          </div>
           <button
             onClick={handleSignOut}
             className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
