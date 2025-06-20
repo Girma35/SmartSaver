@@ -52,7 +52,7 @@ function App() {
           <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
             <LoadingSpinner size="lg" color="text-white" />
           </div>
-          <p className="text-gray-600">Loading FinanceFlow...</p>
+          <p className="text-gray-600">Loading SmartSaver...</p>
         </div>
       </div>
     );

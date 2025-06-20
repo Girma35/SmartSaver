@@ -49,7 +49,7 @@ const generateFinancialAdvice = (data: FinancialAnalysisRequest): string => {
     const topCategory = topCategories[0];
     const categoryPercentage = topCategory ? (topCategory[1] / totalSpent * 100) : 0;
     
-    return `**Spending Analysis:**
+    return `**SmartSaver Spending Analysis:**
 
 📊 **Top Spending Categories:**
 ${topCategories.map(([cat, amount], i) => `${i + 1}. ${cat}: $${amount.toFixed(2)} (${(amount/totalSpent*100).toFixed(1)}%)`).join('\n')}
@@ -72,7 +72,7 @@ ${topCategories.map(([cat, amount], i) => `${i + 1}. ${cat}: $${amount.toFixed(2
       savings: monthlySpent * 0.2
     };
 
-    return `**Personalized Budget Plan:**
+    return `**SmartSaver Budget Plan:**
 
 📋 **50/30/20 Rule Applied to Your Spending:**
 • **Needs (50%):** $${recommendedBudget.needs.toFixed(2)} - Rent, groceries, utilities
@@ -95,7 +95,7 @@ ${topCategories.map(([cat, amount], i) => `${i + 1}. ${cat}: $${amount.toFixed(2
     const potentialSavings = topCategories[0] ? topCategories[0][1] * 0.2 : 100;
     const yearlyProjection = potentialSavings * 12;
 
-    return `**Savings Strategy & Projections:**
+    return `**SmartSaver Savings Strategy & Projections:**
 
 💰 **Immediate Opportunities:**
 • Reduce ${topCategories[0]?.[0] || 'top category'} by 20% = $${potentialSavings.toFixed(2)}/month saved
@@ -133,7 +133,7 @@ ${topCategories.map(([cat, amount], i) => `${i + 1}. ${cat}: $${amount.toFixed(2
   }
 
   // Default comprehensive advice
-  return `**Personalized Financial Guidance:**
+  return `**SmartSaver Personalized Financial Guidance:**
 
 📈 **Your Financial Snapshot:**
 • Total tracked expenses: $${totalSpent.toFixed(2)}

@@ -42,7 +42,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                  FinanceFlow
+                  SmartSaver
                 </span>
               </div>
             </div>
@@ -117,7 +117,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                     <BarChart3 className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                    FinanceFlow
+                    SmartSaver
                   </span>
                 </div>
                 <button

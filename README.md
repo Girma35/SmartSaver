@@ -1,4 +1,4 @@
-# FinanceFlow - AI-Powered Personal Finance Management
+# SmartSaver - AI-Powered Personal Finance Management
 
 A modern, comprehensive personal finance management application built with React, TypeScript, and Supabase. Track expenses, analyze spending patterns with interactive charts, and get personalized AI-powered financial advice to achieve your money goals.
 
@@ -84,7 +84,7 @@ VITE_STRIPE_PUBLISHABLE_KEY=your_stripe_publishable_key
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd financeflow
+   cd smartsaver
    ```
 
 2. **Install dependencies**
@@ -213,11 +213,11 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 For support and questions:
 - Create an issue in the repository
-- Contact support at support@financeflow.com
+- Contact support at support@smartsaver.com
 - Check the documentation and FAQ sections
 
 ---
 
 Built with ❤️ using React, TypeScript, Supabase, Stripe, and advanced AI analytics.
 
-**Experience the future of personal finance management with FinanceFlow!**
+**Experience the future of personal finance management with SmartSaver!**

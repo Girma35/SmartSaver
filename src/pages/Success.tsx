@@ -29,7 +29,7 @@ const Success: React.FC = () => {
           Payment Successful!
         </h1>
         <p className="text-gray-600 mb-8">
-          Thank you for your subscription! Your account has been upgraded and you now have access to all premium features.
+          Thank you for your subscription! Your SmartSaver account has been upgraded and you now have access to all premium features.
         </p>
 
         {/* Session Info */}
@@ -92,8 +92,8 @@ const Success: React.FC = () => {
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-sm text-gray-500">
             Need help? Contact our support team at{' '}
-            <a href="mailto:support@financeflow.com" className="text-purple-600 hover:text-purple-700">
-              support@financeflow.com
+            <a href="mailto:support@smartsaver.com" className="text-purple-600 hover:text-purple-700">
+              support@smartsaver.com
             </a>
           </p>
         </div>

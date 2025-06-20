@@ -149,7 +149,7 @@ const Profile: React.FC = () => {
     setShow2FAModal(true);
     setTwoFactorStep('setup');
     // Generate a mock QR code URL for demonstration
-    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/FinanceFlow:${user?.email}?secret=JBSWY3DPEHPK3PXP&issuer=FinanceFlow`);
+    setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/SmartSaver:${user?.email}?secret=JBSWY3DPEHPK3PXP&issuer=SmartSaver`);
   };
 
   const verify2FACode = () => {
@@ -230,7 +230,7 @@ const Profile: React.FC = () => {
                     <p className="text-gray-600 mb-2">{user?.email}</p>
                     <div className="flex items-center space-x-4">
                       <p className="text-gray-500 text-sm">
-                        Member since {joinDate.toLocaleDateString()}
+                        SmartSaver member since {joinDate.toLocaleDateString()}
                       </p>
                       {formData.two_factor_enabled && (
                         <div className="flex items-center space-x-1 bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
@@ -570,7 +570,7 @@ const Profile: React.FC = () => {
               </div>
               <p className="text-sm mt-4 opacity-90">
                 {formData.two_factor_enabled 
-                  ? 'Your account is well protected!' 
+                  ? 'Your SmartSaver account is well protected!' 
                   : 'Consider enabling 2FA for better security'
                 }
               </p>
@@ -712,7 +712,7 @@ const Profile: React.FC = () => {
                     <CheckCircle className="w-8 h-8 text-white" />
                   </div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">Success!</h3>
-                  <p className="text-gray-600 mb-6">Two-Factor Authentication has been enabled for your account.</p>
+                  <p className="text-gray-600 mb-6">Two-Factor Authentication has been enabled for your SmartSaver account.</p>
                   <div className="bg-green-50 border border-green-200 rounded-xl p-4">
                     <p className="text-green-700 text-sm">
                       Your account is now more secure. You'll need to enter a code from your authenticator app when signing in.

@@ -48,8 +48,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           </h1>
           <p className="text-gray-600">
             {isSignUp 
-              ? 'Start your financial journey today' 
-              : 'Sign in to your FinanceFlow account'
+              ? 'Start your financial journey with SmartSaver' 
+              : 'Sign in to your SmartSaver account'
             }
           </p>
         </div>
