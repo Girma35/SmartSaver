@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { TrendingUp, DollarSign, Target, Calendar, BarChart3, PieChart, LineChart as LineChartIcon, Filter, Download } from 'lucide-react';
+import { TrendingUp, DollarSign, Target, Calendar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Filter, Download } from 'lucide-react';
 import PieChart from '../components/PieChart';
 import LineChart from '../components/charts/LineChart';
 import BarChart from '../components/charts/BarChart';
@@ -226,7 +226,7 @@ const Dashboard: React.FC = () => {
             <div className="bg-white rounded-2xl shadow-lg p-8">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-                  <PieChart className="w-5 h-5 mr-2 text-purple-500" />
+                  <PieChartIcon className="w-5 h-5 mr-2 text-purple-500" />
                   Spending by Category
                 </h2>
                 <div className="flex items-center space-x-2">
@@ -236,7 +236,7 @@ const Dashboard: React.FC = () => {
                       chartType === 'donut' ? 'bg-purple-100 text-purple-600' : 'text-gray-400 hover:text-gray-600'
                     }`}
                   >
-                    <PieChart className="w-4 h-4" />
+                    <PieChartIcon className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setChartType('bar')}
@@ -275,7 +275,7 @@ const Dashboard: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-center py-12">
-                  <PieChart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <PieChartIcon className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">No expenses to display yet</p>
                   <p className="text-gray-400 text-sm">Add some expenses to see your spending breakdown</p>
                 </div>
