@@ -74,8 +74,10 @@ Deno.serve(async (req: Request) => {
     console.log('Authenticated user:', user.email);
 
     // Get origin for redirect URLs
-    const origin = req.headers.get('origin') || 'http://localhost:5173';
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:5173';
     
+    console.log('Using origin for redirects:', origin);
+
     // Create checkout session using Stripe API directly with fetch
     const stripeApiUrl = 'https://api.stripe.com/v1/checkout/sessions';
     
@@ -85,11 +87,14 @@ Deno.serve(async (req: Request) => {
     formData.append('line_items[0][quantity]', '1');
     formData.append('success_url', `${origin}/success?session_id={CHECKOUT_SESSION_ID}`);
     formData.append('cancel_url', `${origin}/pricing`);
-    formData.append('billing_address_collection', 'required');
+    formData.append('billing_address_collection', 'auto');
     formData.append('customer_email', user.email || '');
     formData.append('metadata[user_id]', user.id);
     formData.append('subscription_data[metadata][user_id]', user.id);
-    // Removed automatic_tax to avoid origin address requirement in test mode
+    formData.append('allow_promotion_codes', 'true');
+    
+    // Add payment method types for better compatibility
+    formData.append('payment_method_types[0]', 'card');
 
     console.log('Making request to Stripe API...');
 
@@ -113,6 +118,7 @@ Deno.serve(async (req: Request) => {
       try {
         const errorData = JSON.parse(errorText);
         errorMessage = errorData.error?.message || errorMessage;
+        console.error('Parsed Stripe error:', errorData);
       } catch (e) {
         // If we can't parse the error, use the raw text
         errorMessage = errorText;
@@ -123,9 +129,18 @@ Deno.serve(async (req: Request) => {
 
     const session = await stripeResponse.json();
     console.log('Checkout session created successfully:', session.id);
+    console.log('Checkout URL:', session.url);
+
+    // Validate that we got a proper checkout URL
+    if (!session.url) {
+      throw new Error('No checkout URL returned from Stripe');
+    }
 
     return new Response(
-      JSON.stringify({ url: session.url }),
+      JSON.stringify({ 
+        url: session.url,
+        sessionId: session.id 
+      }),
       {
         headers: {
           'Content-Type': 'application/json',
@@ -139,7 +154,8 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({ 
         error: error.message || 'Failed to create checkout session',
-        details: error.toString()
+        details: error.toString(),
+        timestamp: new Date().toISOString()
       }),
       {
         status: 400,

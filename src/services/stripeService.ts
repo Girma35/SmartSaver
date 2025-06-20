@@ -4,6 +4,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 export interface CheckoutSessionResponse {
   url?: string;
+  sessionId?: string;
   error?: string;
 }
 
@@ -69,7 +70,15 @@ export const createCheckoutSession = async (priceId: string, accessToken?: strin
       return { error: 'No checkout URL received from server' };
     }
 
-    return { url: data.url };
+    // Validate the URL format
+    if (!data.url.startsWith('https://checkout.stripe.com/')) {
+      console.warn('Unexpected checkout URL format:', data.url);
+    }
+
+    return { 
+      url: data.url,
+      sessionId: data.sessionId 
+    };
   } catch (error) {
     console.error('Stripe checkout error:', error);
     

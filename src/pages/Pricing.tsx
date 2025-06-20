@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Star, Zap, Crown, ArrowRight, Loader2, CreditCard } from 'lucide-react';
+import { Check, Star, Zap, Crown, ArrowRight, Loader2, CreditCard, AlertCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSubscription } from '../hooks/useSubscription';
 import { createCheckoutSession } from '../services/stripeService';
@@ -8,6 +8,7 @@ const Pricing: React.FC = () => {
   const { user, session } = useAuth();
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const plans = [
     {
@@ -74,36 +75,39 @@ const Pricing: React.FC = () => {
 
   const handleSubscribe = async (plan: typeof plans[0]) => {
     if (!user) {
-      alert('Please sign in to subscribe to a plan');
+      setError('Please sign in to subscribe to a plan');
       return;
     }
 
     if (!session?.access_token) {
-      alert('Authentication session expired. Please sign in again.');
+      setError('Authentication session expired. Please sign in again.');
       return;
     }
 
     if (plan.id === 'free') {
-      alert('You are already on the free plan!');
+      setError('You are already on the free plan!');
       return;
     }
 
     if (!plan.stripePriceId) {
-      alert('This plan is not available for purchase yet. Please contact support.');
+      setError('This plan is not available for purchase yet. Please contact support.');
       return;
     }
 
     setLoadingPlan(plan.id);
+    setError(null);
 
     try {
       console.log('Creating Stripe checkout session for:', plan.name);
+      console.log('Price ID:', plan.stripePriceId);
+      console.log('User:', user.email);
       
       // Create real Stripe checkout session with user's access token
-      const { url, error } = await createCheckoutSession(plan.stripePriceId, session.access_token);
+      const { url, error: checkoutError } = await createCheckoutSession(plan.stripePriceId, session.access_token);
       
-      if (error) {
-        console.error('Checkout error:', error);
-        alert('Checkout error: ' + error);
+      if (checkoutError) {
+        console.error('Checkout error:', checkoutError);
+        setError('Checkout error: ' + checkoutError);
         return;
       }
       
@@ -114,11 +118,11 @@ const Pricing: React.FC = () => {
         // Redirect to Stripe's hosted checkout page
         window.location.href = url;
       } else {
-        alert('Failed to create checkout session. Please try again.');
+        setError('Failed to create checkout session. Please try again.');
       }
     } catch (error) {
       console.error('Subscription error:', error);
-      alert('Something went wrong. Please try again.');
+      setError('Something went wrong. Please try again.');
     } finally {
       setLoadingPlan(null);
     }
@@ -185,6 +189,16 @@ const Pricing: React.FC = () => {
               <span className="text-gray-700 font-medium">
                 Current Plan: {getCurrentPlan().charAt(0).toUpperCase() + getCurrentPlan().slice(1)}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="max-w-md mx-auto mb-8">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center space-x-3">
+              <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
+              <p className="text-red-700 text-sm">{error}</p>
             </div>
           </div>
         )}
