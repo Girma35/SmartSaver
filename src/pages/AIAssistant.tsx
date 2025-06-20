@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Sparkles, TrendingUp, DollarSign } from 'lucide-react';
+import { Send, Bot, User, Sparkles, TrendingUp, DollarSign, MessageCircle } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { generateAIFinancialAdvice } from '../services/aiService';
 import { useExpenses } from '../hooks/useExpenses';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 
 const AIAssistant: React.FC = () => {
   const { expenses } = useExpenses();
@@ -28,7 +29,6 @@ const AIAssistant: React.FC = () => {
 
   // Enhanced message formatting function
   const formatAIMessage = (text: string) => {
-    // Split by sections and format each part
     const sections = text.split(/\*\*(.*?)\*\*/g);
     const elements: JSX.Element[] = [];
     
@@ -36,7 +36,6 @@ const AIAssistant: React.FC = () => {
       const section = sections[i];
       
       if (i % 2 === 1) {
-        // This is a header (between **)
         elements.push(
           <div key={i} className="font-bold text-gray-900 text-lg mb-3 flex items-center">
             {section.includes('Financial Snapshot') && <TrendingUp className="w-5 h-5 mr-2 text-purple-500" />}
@@ -46,21 +45,18 @@ const AIAssistant: React.FC = () => {
           </div>
         );
       } else if (section.trim()) {
-        // Regular content
         const lines = section.split('\n').filter(line => line.trim());
         
         lines.forEach((line, lineIndex) => {
           const trimmedLine = line.trim();
           
           if (trimmedLine.startsWith('📈') || trimmedLine.startsWith('💡') || trimmedLine.startsWith('🎯')) {
-            // Section headers with emojis
             elements.push(
               <div key={`${i}-${lineIndex}`} className="font-semibold text-gray-800 text-base mb-2 mt-4">
                 {trimmedLine}
               </div>
             );
           } else if (trimmedLine.startsWith('•')) {
-            // Bullet points
             elements.push(
               <div key={`${i}-${lineIndex}`} className="flex items-start space-x-2 mb-2">
                 <div className="w-2 h-2 bg-purple-500 rounded-full mt-2 flex-shrink-0"></div>
@@ -68,7 +64,6 @@ const AIAssistant: React.FC = () => {
               </div>
             );
           } else if (trimmedLine.match(/^\d+\./)) {
-            // Numbered lists
             const [number, ...rest] = trimmedLine.split('.');
             elements.push(
               <div key={`${i}-${lineIndex}`} className="flex items-start space-x-3 mb-3">
@@ -82,14 +77,12 @@ const AIAssistant: React.FC = () => {
               </div>
             );
           } else if (trimmedLine && !trimmedLine.startsWith('Need specific')) {
-            // Regular paragraphs
             elements.push(
               <p key={`${i}-${lineIndex}`} className="text-gray-700 mb-3 leading-relaxed">
                 {trimmedLine}
               </p>
             );
           } else if (trimmedLine.startsWith('Need specific')) {
-            // Call to action
             elements.push(
               <div key={`${i}-${lineIndex}`} className="mt-4 p-3 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg border border-purple-200">
                 <p className="text-purple-700 font-medium text-sm">{trimmedLine}</p>
@@ -193,7 +186,7 @@ const AIAssistant: React.FC = () => {
               <div className="bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <Bot className="w-6 h-6 text-white" />
+                    <MessageCircle className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3 className="text-white font-semibold">Financial Analysis Chat</h3>
@@ -251,12 +244,9 @@ const AIAssistant: React.FC = () => {
                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center">
                       <Bot className="w-4 h-4 text-white" />
                     </div>
-                    <div className="bg-gray-50 px-4 py-3 rounded-2xl">
-                      <div className="flex space-x-1">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                      </div>
+                    <div className="bg-gray-50 px-4 py-3 rounded-2xl flex items-center space-x-2">
+                      <LoadingSpinner size="sm" />
+                      <span className="text-gray-600 text-sm">Analyzing your finances...</span>
                     </div>
                   </div>
                 )}
@@ -293,9 +283,13 @@ const AIAssistant: React.FC = () => {
                   <button
                     type="submit"
                     disabled={!inputText.trim() || isLoading}
-                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center"
                   >
-                    <Send className="w-5 h-5" />
+                    {isLoading ? (
+                      <LoadingSpinner size="sm" color="text-white" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
                   </button>
                 </form>
               </div>

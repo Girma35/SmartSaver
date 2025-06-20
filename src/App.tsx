@@ -8,6 +8,7 @@ import AIAssistant from './pages/AIAssistant';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
 import Success from './pages/Success';
+import LoadingSpinner from './components/ui/LoadingSpinner';
 import { useAuth } from './hooks/useAuth';
 
 function App() {
@@ -48,8 +49,8 @@ function App() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <div className="w-8 h-8 bg-white rounded-full"></div>
+          <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LoadingSpinner size="lg" color="text-white" />
           </div>
           <p className="text-gray-600">Loading FinanceFlow...</p>
         </div>

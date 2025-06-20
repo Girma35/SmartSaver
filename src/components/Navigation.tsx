@@ -1,5 +1,5 @@
-import React from 'react';
-import { Home, Plus, BarChart3, MessageCircle, LogOut, User, CreditCard } from 'lucide-react';
+import React, { useState } from 'react';
+import { Home, Plus, BarChart3, MessageCircle, LogOut, User, CreditCard, Menu, X } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface NavigationProps {
@@ -9,6 +9,7 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
   const { signOut, user } = useAuth();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
     { id: 'home', label: 'Home', icon: Home },
@@ -21,105 +22,159 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
 
   const handleSignOut = async () => {
     await signOut();
+    setIsMobileMenuOpen(false);
+  };
+
+  const handlePageChange = (page: string) => {
+    onPageChange(page);
+    setIsMobileMenuOpen(false);
   };
 
   return (
-    <nav className="bg-white shadow-lg border-b">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
-                <BarChart3 className="w-5 h-5 text-white" />
+    <>
+      <nav className="bg-white shadow-lg border-b sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  FinanceFlow
+                </span>
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                FinanceFlow
-              </span>
+            </div>
+            
+            {/* Desktop Navigation */}
+            <div className="hidden lg:flex items-center space-x-8">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handlePageChange(item.id)}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      currentPage === item.id
+                        ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+              
+              <div className="flex items-center space-x-4 ml-4 pl-4 border-l">
+                <div className="flex items-center space-x-3">
+                  <img 
+                    src="/photo_2025-05-19_22-40-08.jpg" 
+                    alt="Profile"
+                    className="w-8 h-8 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-purple-300 transition-all duration-200"
+                    onClick={() => handlePageChange('profile')}
+                  />
+                  <span className="text-sm text-gray-600 hidden xl:inline">{user?.email}</span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Sign Out</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Mobile Menu Button */}
+            <div className="lg:hidden">
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+              >
+                {isMobileMenuOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
             </div>
           </div>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => {
-              const Icon = item.icon;
-              return (
+        </div>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)} />
+          <div className="fixed top-0 right-0 w-80 h-full bg-white shadow-xl transform transition-transform duration-300">
+            <div className="p-6">
+              {/* Mobile Header */}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
+                    <BarChart3 className="w-5 h-5 text-white" />
+                  </div>
+                  <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    FinanceFlow
+                  </span>
+                </div>
                 <button
-                  key={item.id}
-                  onClick={() => onPageChange(item.id)}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                    currentPage === item.id
-                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  <X className="w-5 h-5" />
                 </button>
-              );
-            })}
-            
-            <div className="flex items-center space-x-4 ml-4 pl-4 border-l">
-              <div className="flex items-center space-x-3">
+              </div>
+
+              {/* User Info */}
+              <div className="flex items-center space-x-3 mb-8 p-4 bg-gray-50 rounded-xl">
                 <img 
                   src="/photo_2025-05-19_22-40-08.jpg" 
                   alt="Profile"
-                  className="w-8 h-8 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-purple-300 transition-all duration-200"
-                  onClick={() => onPageChange('profile')}
+                  className="w-12 h-12 rounded-xl object-cover"
                 />
-                <span className="text-sm text-gray-600">{user?.email}</span>
+                <div>
+                  <div className="font-medium text-gray-900">Welcome back!</div>
+                  <div className="text-sm text-gray-600">{user?.email}</div>
+                </div>
               </div>
+
+              {/* Mobile Navigation Items */}
+              <div className="space-y-2 mb-8">
+                {navItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handlePageChange(item.id)}
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 ${
+                        currentPage === item.id
+                          ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
+                          : 'text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      <Icon className="w-5 h-5" />
+                      <span>{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Mobile Sign Out */}
               <button
                 onClick={handleSignOut}
-                className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-5 h-5" />
                 <span>Sign Out</span>
               </button>
             </div>
           </div>
         </div>
-      </div>
-      
-      {/* Mobile Navigation */}
-      <div className="md:hidden bg-white border-t">
-        <div className="grid grid-cols-6 gap-1 p-2">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onPageChange(item.id)}
-                className={`flex flex-col items-center space-y-1 px-2 py-2 rounded-md text-xs font-medium transition-all duration-200 ${
-                  currentPage === item.id
-                    ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                <span className="text-xs">{item.label}</span>
-              </button>
-            );
-          })}
-        </div>
-        
-        <div className="border-t p-4 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img 
-              src="/photo_2025-05-19_22-40-08.jpg" 
-              alt="Profile"
-              className="w-8 h-8 rounded-lg object-cover"
-            />
-            <span className="text-sm text-gray-600">{user?.email}</span>
-          </div>
-          <button
-            onClick={handleSignOut}
-            className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
-          >
-            <LogOut className="w-4 h-4" />
-            <span>Sign Out</span>
-          </button>
-        </div>
-      </div>
-    </nav>
+      )}
+    </>
   );
 };
 
