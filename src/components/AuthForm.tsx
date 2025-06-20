@@ -27,7 +27,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
         : await signIn(email, password);
 
       if (error) {
-        setError(error.message);
+        // Handle specific case where user already exists during sign up
+        if (isSignUp && error.message.includes('User already registered')) {
+          setIsSignUp(false);
+          setError('This email is already registered. Please sign in instead.');
+        } else {
+          setError(error.message);
+        }
       } else {
         if (isSignUp) {
           setSuccess('Account created successfully! Welcome email sent. Check your browser console for the demo email.');
