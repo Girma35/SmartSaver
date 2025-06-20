@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, User, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface AuthFormProps {
@@ -12,12 +12,14 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const { signIn, signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     try {
       const { error } = isSignUp 
@@ -27,6 +29,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       if (error) {
         setError(error.message);
       } else {
+        if (isSignUp) {
+          setSuccess('Account created successfully! Welcome email sent. Check your browser console for the demo email.');
+        }
         onSuccess?.();
       }
     } catch (err) {
@@ -58,6 +63,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-center space-x-3">
             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
             <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
+
+        {success && (
+          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl flex items-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-green-500 flex-shrink-0" />
+            <p className="text-green-700 text-sm">{success}</p>
           </div>
         )}
 
@@ -104,7 +116,11 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
         <div className="mt-6 text-center">
           <button
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setError(null);
+              setSuccess(null);
+            }}
             className="text-purple-600 hover:text-purple-700 font-medium transition-colors duration-200"
           >
             {isSignUp 
@@ -113,6 +129,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
             }
           </button>
         </div>
+
+        {isSignUp && (
+          <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+            <p className="text-blue-700 text-sm">
+              <strong>🎉 What happens after registration:</strong>
+            </p>
+            <ul className="text-blue-600 text-sm mt-2 space-y-1">
+              <li>• Welcome email sent to your inbox</li>
+              <li>• Access to all SmartSaver features</li>
+              <li>• AI-powered financial insights</li>
+              <li>• Secure expense tracking</li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );

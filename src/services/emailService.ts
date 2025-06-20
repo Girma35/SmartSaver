@@ -1,5 +1,5 @@
 interface EmailNotificationData {
-  type: 'expense_added' | 'budget_alert' | 'spending_summary' | 'security_alert' | 'subscription_update';
+  type: 'expense_added' | 'budget_alert' | 'spending_summary' | 'security_alert' | 'subscription_update' | 'welcome';
   userEmail: string;
   userName?: string;
   data: any;
@@ -45,6 +45,28 @@ export const sendEmailNotification = async (notificationData: EmailNotificationD
     // Return success for demo purposes
     return { success: true };
   }
+};
+
+// Welcome email function
+export const sendWelcomeEmail = async (
+  userEmail: string,
+  userName: string
+) => {
+  return sendEmailNotification({
+    type: 'welcome',
+    userEmail,
+    userName,
+    data: {
+      registrationDate: new Date().toISOString(),
+      features: [
+        'Smart expense tracking',
+        'AI-powered financial insights', 
+        'Interactive charts and analytics',
+        'Budget management tools',
+        'Secure data protection'
+      ]
+    }
+  });
 };
 
 // Specific notification functions for different events
@@ -127,6 +149,8 @@ export const sendSubscriptionUpdateNotification = async (
 // Helper functions for demo email content
 const getEmailSubject = (type: string, data: any): string => {
   switch (type) {
+    case 'welcome':
+      return `🎉 Welcome to SmartSaver - Your Financial Journey Starts Now!`;
     case 'expense_added':
       return `💰 New Expense Added - $${data.amount}`;
     case 'budget_alert':
@@ -146,6 +170,9 @@ const getEmailContent = (type: string, data: any, userName?: string): string => 
   const name = userName || 'User';
   
   switch (type) {
+    case 'welcome':
+      return `Hi ${name}! 🎉 Welcome to SmartSaver! We're excited to help you take control of your finances with our AI-powered tools and insights. Your account was created on ${new Date(data.registrationDate).toLocaleDateString()}. Get started by adding your first expense and exploring our features: ${data.features.join(', ')}.`;
+    
     case 'expense_added':
       return `Hi ${name}! You've added a new expense: $${data.amount} in ${data.category} category on ${new Date(data.date).toLocaleDateString()}. ${data.notes ? 'Notes: ' + data.notes : ''}`;
     

@@ -2,6 +2,7 @@
   # Email Notification Service
   
   This function sends email notifications for various SmartSaver events:
+  - Welcome emails for new registrations
   - Expense added notifications
   - Budget limit alerts
   - Weekly/monthly spending summaries
@@ -16,7 +17,7 @@ const corsHeaders = {
 };
 
 interface EmailRequest {
-  type: 'expense_added' | 'budget_alert' | 'spending_summary' | 'security_alert' | 'subscription_update';
+  type: 'welcome' | 'expense_added' | 'budget_alert' | 'spending_summary' | 'security_alert' | 'subscription_update';
   userEmail: string;
   userName?: string;
   data: any;
@@ -45,10 +46,68 @@ const generateEmailTemplate = (type: string, data: any, userName: string = 'User
       .alert { background: #fef2f2; border-left-color: #ef4444; }
       .success { background: #f0fdf4; border-left-color: #22c55e; }
       .warning { background: #fffbeb; border-left-color: #f59e0b; }
+      .welcome { background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border-left-color: #0ea5e9; }
+      .feature-list { list-style: none; padding: 0; }
+      .feature-list li { padding: 8px 0; display: flex; align-items: center; }
+      .feature-list li:before { content: "✨"; margin-right: 10px; }
     </style>
   `;
 
   switch (type) {
+    case 'welcome':
+      return {
+        subject: `🎉 Welcome to SmartSaver - Your Financial Journey Starts Now!`,
+        html: `
+          ${baseStyles}
+          <div class="container">
+            <div class="header">
+              <h1>🎉 Welcome to SmartSaver!</h1>
+              <p>Your AI-Powered Personal Finance Assistant</p>
+            </div>
+            <div class="content">
+              <h2>Hi ${userName}! 👋</h2>
+              <p>Welcome to SmartSaver! We're thrilled to have you join our community of smart money managers.</p>
+              
+              <div class="card welcome">
+                <h3>🚀 You're All Set!</h3>
+                <p><strong>Account Created:</strong> ${new Date(data.registrationDate).toLocaleDateString()}</p>
+                <p>Your SmartSaver account is ready to help you take control of your finances with AI-powered insights and tools.</p>
+              </div>
+
+              <div class="card">
+                <h3>✨ What You Can Do Now</h3>
+                <ul class="feature-list">
+                  ${data.features.map((feature: string) => `<li>${feature}</li>`).join('')}
+                </ul>
+              </div>
+
+              <div class="card success">
+                <h3>🎯 Get Started in 3 Easy Steps</h3>
+                <ol>
+                  <li><strong>Add Your First Expense:</strong> Start tracking your spending today</li>
+                  <li><strong>Explore the Dashboard:</strong> See your financial insights come to life</li>
+                  <li><strong>Chat with AI:</strong> Get personalized financial advice anytime</li>
+                </ol>
+              </div>
+
+              <div style="text-align: center;">
+                <a href="${Deno.env.get('FRONTEND_URL') || 'https://smartsaver.app'}/dashboard" class="button">
+                  🚀 Start Your Financial Journey
+                </a>
+              </div>
+
+              <p>If you have any questions, our support team is here to help. Just reply to this email!</p>
+            </div>
+            <div class="footer">
+              <p><strong>Welcome to the SmartSaver family! 🎉</strong></p>
+              <p>This email was sent from SmartSaver - Your AI-Powered Personal Finance Assistant</p>
+              <p>You can manage your notification preferences in your profile settings.</p>
+            </div>
+          </div>
+        `,
+        text: `Hi ${userName}! 🎉 Welcome to SmartSaver! We're excited to help you take control of your finances with our AI-powered tools and insights. Your account was created on ${new Date(data.registrationDate).toLocaleDateString()}. Get started by adding your first expense and exploring our features: ${data.features.join(', ')}. Visit ${Deno.env.get('FRONTEND_URL') || 'https://smartsaver.app'}/dashboard to begin your financial journey!`
+      };
+
     case 'expense_added':
       return {
         subject: `💰 New Expense Added - $${data.amount}`,

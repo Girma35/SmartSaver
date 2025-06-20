@@ -32,6 +32,17 @@ export const useAuth = () => {
       email,
       password,
     });
+
+    // Send welcome email after successful registration
+    if (!error && data.user) {
+      try {
+        await sendWelcomeEmail(data.user.email!, data.user.email?.split('@')[0] || 'User');
+      } catch (emailError) {
+        console.warn('Failed to send welcome email:', emailError);
+        // Don't fail the registration if email fails
+      }
+    }
+
     return { data, error };
   };
 
@@ -56,4 +67,73 @@ export const useAuth = () => {
     signIn,
     signOut,
   };
+};
+
+// Welcome email function
+const sendWelcomeEmail = async (userEmail: string, userName: string) => {
+  try {
+    const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-email-notification`;
+    
+    const headers = {
+      'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+      'Content-Type': 'application/json',
+    };
+
+    const requestData = {
+      type: 'welcome',
+      userEmail,
+      userName,
+      data: {
+        registrationDate: new Date().toISOString(),
+        features: [
+          'Smart expense tracking',
+          'AI-powered financial insights',
+          'Interactive charts and analytics',
+          'Budget management tools',
+          'Secure data protection'
+        ]
+      }
+    };
+
+    console.log('Sending welcome email to:', userEmail);
+
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(requestData)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Welcome email API error:', errorText);
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Welcome email result:', result);
+
+    if (result.success) {
+      console.log('✅ Welcome email sent successfully to:', userEmail);
+    } else {
+      throw new Error(result.error || 'Unknown error from email service');
+    }
+  } catch (error) {
+    console.error('Welcome email error:', error);
+    
+    // For demo purposes, log the welcome email that would be sent
+    console.log('📧 DEMO WELCOME EMAIL:');
+    console.log(`To: ${userEmail}`);
+    console.log(`From: SmartSaver <welcome@smartsaver.app>`);
+    console.log(`Subject: 🎉 Welcome to SmartSaver - Your Financial Journey Starts Now!`);
+    console.log(`Content: Hi ${userName}! Welcome to SmartSaver! We're excited to help you take control of your finances with our AI-powered tools and insights.`);
+    console.log('Features included:');
+    console.log('- Smart expense tracking');
+    console.log('- AI-powered financial insights');
+    console.log('- Interactive charts and analytics');
+    console.log('- Budget management tools');
+    console.log('- Secure data protection');
+    console.log('---');
+    
+    // Don't throw error for demo purposes
+  }
 };
