@@ -9,7 +9,7 @@ const Profile: React.FC = () => {
   const { user, signOut } = useAuth();
   const { expenses } = useExpenses();
   const { profile, loading, updateProfile, uploadAvatar } = useProfile();
-  const { sendNotification } = useNotifications();
+  const { sendNotification, sending: notificationSending } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -180,10 +180,14 @@ const Profile: React.FC = () => {
       
       // Send security alert notification
       try {
-        await sendNotification('security_alert', {
+        const result = await sendNotification('security_alert', {
           action: 'Two-Factor Authentication enabled',
           ipAddress: 'Unknown' // In production, you'd get the real IP
         });
+        
+        if (result.success) {
+          console.log('✅ Security notification sent successfully');
+        }
       } catch (error) {
         console.warn('Failed to send security notification:', error);
       }
@@ -204,10 +208,14 @@ const Profile: React.FC = () => {
       
       // Send security alert notification
       try {
-        await sendNotification('security_alert', {
+        const result = await sendNotification('security_alert', {
           action: 'Two-Factor Authentication disabled',
           ipAddress: 'Unknown'
         });
+        
+        if (result.success) {
+          console.log('✅ Security notification sent successfully');
+        }
       } catch (error) {
         console.warn('Failed to send security notification:', error);
       }
@@ -239,9 +247,9 @@ const Profile: React.FC = () => {
       });
 
       if (result.success) {
-        setMessage({ type: 'success', text: 'Test notification sent to your email!' });
+        setMessage({ type: 'success', text: 'Test notification sent! Check the browser console to see the demo email.' });
       } else {
-        setMessage({ type: 'error', text: result.error || 'Failed to send test notification' });
+        setMessage({ type: 'error', text: 'Failed to send test notification' });
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to send test notification' });
@@ -265,28 +273,23 @@ const Profile: React.FC = () => {
     setEmailLoading(true);
     
     try {
-      // In a real implementation, you would call your backend API to change email
-      // This would typically involve:
-      // 1. Verifying the current password
-      // 2. Sending a verification email to the new address
-      // 3. Updating the email after verification
-      
-      // For demo purposes, we'll simulate the process
+      // Simulate the email change process
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setMessage({ type: 'success', text: 'Verification email sent to your new address. Please check your inbox.' });
+      // Send security notification
+      const result = await sendNotification('security_alert', {
+        action: `Email change requested to ${emailForm.newEmail}`,
+        ipAddress: 'Unknown'
+      });
+      
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Email change request sent! Check the browser console to see the demo notification.' });
+      } else {
+        setMessage({ type: 'success', text: 'Email change request processed (notification service unavailable).' });
+      }
+      
       setShowChangeEmailModal(false);
       setEmailForm({ newEmail: '', confirmEmail: '', currentPassword: '' });
-      
-      // Send security notification
-      try {
-        await sendNotification('security_alert', {
-          action: `Email change requested to ${emailForm.newEmail}`,
-          ipAddress: 'Unknown'
-        });
-      } catch (error) {
-        console.warn('Failed to send security notification:', error);
-      }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to change email. Please try again.' });
     } finally {
@@ -316,28 +319,23 @@ const Profile: React.FC = () => {
     setPasswordLoading(true);
     
     try {
-      // In a real implementation, you would call your backend API to change password
-      // This would typically involve:
-      // 1. Verifying the current password
-      // 2. Updating the password in the authentication system
-      // 3. Optionally logging out other sessions
-      
-      // For demo purposes, we'll simulate the process
+      // Simulate the password change process
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      setMessage({ type: 'success', text: 'Password changed successfully!' });
+      // Send security notification
+      const result = await sendNotification('security_alert', {
+        action: 'Password changed',
+        ipAddress: 'Unknown'
+      });
+      
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Password changed successfully! Security notification sent.' });
+      } else {
+        setMessage({ type: 'success', text: 'Password changed successfully!' });
+      }
+      
       setShowChangePasswordModal(false);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      
-      // Send security notification
-      try {
-        await sendNotification('security_alert', {
-          action: 'Password changed',
-          ipAddress: 'Unknown'
-        });
-      } catch (error) {
-        console.warn('Failed to send security notification:', error);
-      }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to change password. Please check your current password and try again.' });
     } finally {
@@ -656,9 +654,10 @@ const Profile: React.FC = () => {
                     </label>
                     <button
                       onClick={sendTestNotification}
-                      className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-lg hover:bg-purple-200 transition-colors"
+                      disabled={notificationSending}
+                      className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-lg hover:bg-purple-200 transition-colors disabled:opacity-50"
                     >
-                      Test
+                      {notificationSending ? 'Sending...' : 'Test'}
                     </button>
                   </div>
                 </div>

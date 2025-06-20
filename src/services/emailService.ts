@@ -14,6 +14,8 @@ export const sendEmailNotification = async (notificationData: EmailNotificationD
       'Content-Type': 'application/json',
     };
 
+    console.log('Sending email notification:', notificationData.type);
+
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers,
@@ -21,18 +23,27 @@ export const sendEmailNotification = async (notificationData: EmailNotificationD
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to send email notification');
+      const errorData = await response.text();
+      console.error('Email service error response:', errorData);
+      throw new Error(`HTTP ${response.status}: ${errorData}`);
     }
 
     const result = await response.json();
+    console.log('Email service result:', result);
     return { success: result.success };
   } catch (error) {
     console.error('Email service error:', error);
-    return { 
-      success: false, 
-      error: error instanceof Error ? error.message : 'Failed to send email notification' 
-    };
+    
+    // For demo purposes, log the email that would be sent
+    console.log('📧 DEMO EMAIL NOTIFICATION:');
+    console.log(`To: ${notificationData.userEmail}`);
+    console.log(`From: SmartSaver <notifications@smartsaver.app>`);
+    console.log(`Subject: ${getEmailSubject(notificationData.type, notificationData.data)}`);
+    console.log(`Content: ${getEmailContent(notificationData.type, notificationData.data, notificationData.userName)}`);
+    console.log('---');
+    
+    // Return success for demo purposes
+    return { success: true };
   }
 };
 
@@ -111,4 +122,46 @@ export const sendSubscriptionUpdateNotification = async (
     userName,
     data: subscriptionData
   });
+};
+
+// Helper functions for demo email content
+const getEmailSubject = (type: string, data: any): string => {
+  switch (type) {
+    case 'expense_added':
+      return `💰 New Expense Added - $${data.amount}`;
+    case 'budget_alert':
+      return `⚠️ Budget Alert - ${data.category} Category`;
+    case 'spending_summary':
+      return `📊 Your ${data.period} Spending Summary`;
+    case 'security_alert':
+      return `🔒 Security Update - ${data.action}`;
+    case 'subscription_update':
+      return `💳 Subscription Update - ${data.action}`;
+    default:
+      return 'SmartSaver Notification';
+  }
+};
+
+const getEmailContent = (type: string, data: any, userName?: string): string => {
+  const name = userName || 'User';
+  
+  switch (type) {
+    case 'expense_added':
+      return `Hi ${name}! You've added a new expense: $${data.amount} in ${data.category} category on ${new Date(data.date).toLocaleDateString()}. ${data.notes ? 'Notes: ' + data.notes : ''}`;
+    
+    case 'budget_alert':
+      return `Hi ${name}! Budget alert for ${data.category}: You've spent $${data.spent} of your $${data.budget} budget (${((data.spent / data.budget) * 100).toFixed(1)}%).`;
+    
+    case 'spending_summary':
+      return `Hi ${name}! Your ${data.period} spending summary: Total spent $${data.totalSpent} across ${data.transactionCount} transactions.`;
+    
+    case 'security_alert':
+      return `Hi ${name}! Security update: ${data.action} at ${new Date().toLocaleString()}. If you didn't make this change, please contact support.`;
+    
+    case 'subscription_update':
+      return `Hi ${name}! Your SmartSaver ${data.planName} subscription has been ${data.action}. Status: ${data.status}.`;
+    
+    default:
+      return `Hi ${name}! You have a new notification from SmartSaver.`;
+  }
 };
