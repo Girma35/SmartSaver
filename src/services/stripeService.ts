@@ -10,6 +10,8 @@ export interface CheckoutSessionResponse {
 
 export const createCheckoutSession = async (priceId: string, accessToken?: string): Promise<CheckoutSessionResponse> => {
   try {
+    console.log('🔄 Starting checkout session creation...');
+    
     // Validate environment variables
     const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
     const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -26,64 +28,113 @@ export const createCheckoutSession = async (priceId: string, accessToken?: strin
     const cleanUrl = supabaseUrl.endsWith('/') ? supabaseUrl.slice(0, -1) : supabaseUrl;
     const apiUrl = `${cleanUrl}/functions/v1/create-checkout-session`;
     
+    console.log('📡 API URL:', apiUrl);
+    console.log('💳 Price ID:', priceId);
+    console.log('🔑 Has access token:', !!accessToken);
+    
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
+      'Origin': window.location.origin,
+      'Referer': window.location.href
     };
 
-    console.log('Creating checkout session with:', { priceId, apiUrl });
-
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ priceId }),
-      // Add timeout and other fetch options for better reliability
-      signal: AbortSignal.timeout(30000), // 30 second timeout
+    console.log('📤 Request headers:', {
+      ...headers,
+      'Authorization': 'Bearer [REDACTED]'
     });
 
-    console.log('Checkout response status:', response.status);
+    const requestBody = { priceId };
+    console.log('📤 Request body:', requestBody);
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Checkout error response:', errorText);
+    // Create AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    try {
+      console.log('🚀 Making fetch request...');
       
-      let errorMessage = `HTTP error! status: ${response.status}`;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData.error || errorData.details || errorMessage;
-      } catch (e) {
-        // If we can't parse the error, use the status text
-        errorMessage = `${errorMessage} - ${errorText}`;
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      console.log('📥 Response status:', response.status);
+      console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ API error response:', errorText);
+        
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorData.details || errorMessage;
+          console.error('❌ Parsed error data:', errorData);
+        } catch (e) {
+          // If we can't parse the error, use the status text
+          errorMessage = `${errorMessage} - ${errorText}`;
+        }
+        
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      console.log('✅ Response data:', data);
+      
+      if (data.error) {
+        console.error('❌ API returned error:', data.error);
+        return { error: data.error };
+      }
+
+      if (!data.url) {
+        console.error('❌ No checkout URL in response');
+        return { error: 'No checkout URL received from server' };
+      }
+
+      // Validate the URL format
+      if (!data.url.startsWith('https://checkout.stripe.com/')) {
+        console.warn('⚠️ Unexpected checkout URL format:', data.url);
+        // Don't fail here, as Stripe might change their URL format
+      }
+
+      console.log('✅ Checkout session created successfully');
+      console.log('🔗 Checkout URL:', data.url);
+      console.log('🆔 Session ID:', data.sessionId);
+
+      return { 
+        url: data.url,
+        sessionId: data.sessionId 
+      };
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      
+      if (fetchError.name === 'AbortError') {
+        console.error('⏰ Request timeout');
+        throw new Error('Request timeout - please try again');
       }
       
-      throw new Error(errorMessage);
+      console.error('🌐 Network error:', fetchError);
+      throw fetchError;
     }
-
-    const data = await response.json();
-    console.log('Checkout response data:', data);
-    
-    if (data.error) {
-      return { error: data.error };
-    }
-
-    if (!data.url) {
-      return { error: 'No checkout URL received from server' };
-    }
-
-    // Validate the URL format
-    if (!data.url.startsWith('https://checkout.stripe.com/')) {
-      console.warn('Unexpected checkout URL format:', data.url);
-    }
-
-    return { 
-      url: data.url,
-      sessionId: data.sessionId 
-    };
   } catch (error) {
-    console.error('Stripe checkout error:', error);
+    console.error('💥 Stripe checkout error:', error);
     
-    if (error.name === 'AbortError') {
-      return { error: 'Request timeout - please try again' };
+    // Enhanced error handling with specific messages
+    if (error.message.includes('Failed to fetch')) {
+      return { error: 'Network error: Unable to connect to payment service. Please check your internet connection and try again.' };
+    }
+    
+    if (error.message.includes('timeout')) {
+      return { error: 'Request timeout: The payment service is taking too long to respond. Please try again.' };
+    }
+    
+    if (error.message.includes('CORS')) {
+      return { error: 'CORS error: There\'s a configuration issue with the payment service. Please contact support.' };
     }
     
     return { error: error instanceof Error ? error.message : 'Failed to create checkout session' };

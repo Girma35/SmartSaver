@@ -9,6 +9,7 @@ const Pricing: React.FC = () => {
   const { subscription, loading: subscriptionLoading } = useSubscription();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
 
   const plans = [
     {
@@ -96,33 +97,97 @@ const Pricing: React.FC = () => {
 
     setLoadingPlan(plan.id);
     setError(null);
+    setDebugInfo(null);
 
     try {
-      console.log('Creating Stripe checkout session for:', plan.name);
+      console.log('=== STRIPE CHECKOUT DEBUG ===');
+      console.log('Plan:', plan.name);
       console.log('Price ID:', plan.stripePriceId);
       console.log('User:', user.email);
+      console.log('Session exists:', !!session);
+      console.log('Access token exists:', !!session?.access_token);
+      console.log('Current URL:', window.location.href);
+      console.log('Origin:', window.location.origin);
+      
+      // Check environment variables
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const stripeKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY;
+      
+      console.log('Supabase URL:', supabaseUrl);
+      console.log('Supabase Key exists:', !!supabaseKey);
+      console.log('Stripe Key exists:', !!stripeKey);
+      
+      setDebugInfo({
+        plan: plan.name,
+        priceId: plan.stripePriceId,
+        user: user.email,
+        origin: window.location.origin,
+        supabaseUrl,
+        hasSupabaseKey: !!supabaseKey,
+        hasStripeKey: !!stripeKey
+      });
+
+      // Test the edge function directly first
+      const testUrl = `${supabaseUrl}/functions/v1/create-checkout-session`;
+      console.log('Testing edge function URL:', testUrl);
       
       // Create real Stripe checkout session with user's access token
-      const { url, error: checkoutError } = await createCheckoutSession(plan.stripePriceId, session.access_token);
+      const { url, error: checkoutError, sessionId } = await createCheckoutSession(plan.stripePriceId, session.access_token);
       
       if (checkoutError) {
         console.error('Checkout error:', checkoutError);
-        setError('Checkout error: ' + checkoutError);
+        setError(`Checkout error: ${checkoutError}`);
         return;
       }
       
       if (url) {
-        console.log('Redirecting to Stripe checkout:', url);
+        console.log('✅ Checkout session created successfully');
+        console.log('Session ID:', sessionId);
+        console.log('Checkout URL:', url);
+        console.log('URL starts with checkout.stripe.com:', url.startsWith('https://checkout.stripe.com/'));
+        
+        // Validate URL format
+        if (!url.startsWith('https://checkout.stripe.com/')) {
+          setError(`Invalid checkout URL format: ${url}`);
+          return;
+        }
+        
         // Store current page before redirect so we can return if needed
         sessionStorage.setItem('preCheckoutPage', 'pricing');
-        // Redirect to Stripe's hosted checkout page
-        window.location.href = url;
+        sessionStorage.setItem('checkoutPlan', plan.id);
+        
+        console.log('🚀 Redirecting to Stripe checkout...');
+        
+        // Try different redirect methods
+        try {
+          // Method 1: Direct assignment (most reliable)
+          window.location.href = url;
+        } catch (redirectError) {
+          console.error('Direct redirect failed:', redirectError);
+          
+          // Method 2: Using window.open as fallback
+          const checkoutWindow = window.open(url, '_self');
+          if (!checkoutWindow) {
+            setError('Popup blocked. Please allow popups and try again, or copy this URL: ' + url);
+          }
+        }
       } else {
-        setError('Failed to create checkout session. Please try again.');
+        setError('Failed to create checkout session. No URL returned.');
       }
     } catch (error) {
       console.error('Subscription error:', error);
-      setError('Something went wrong. Please try again.');
+      setError(`Something went wrong: ${error.message}`);
+      
+      // Additional debugging for network errors
+      if (error.message.includes('fetch')) {
+        console.error('Network error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        setError('Network error: Unable to connect to payment service. Please check your internet connection and try again.');
+      }
     } finally {
       setLoadingPlan(null);
     }
@@ -198,7 +263,31 @@ const Pricing: React.FC = () => {
           <div className="max-w-md mx-auto mb-8">
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 flex items-center space-x-3">
               <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
-              <p className="text-red-700 text-sm">{error}</p>
+              <div className="flex-1">
+                <p className="text-red-700 text-sm font-medium">Payment Error</p>
+                <p className="text-red-600 text-sm">{error}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Debug Information */}
+        {debugInfo && (
+          <div className="max-w-2xl mx-auto mb-8">
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="font-semibold text-blue-900 mb-3 flex items-center">
+                <CreditCard className="w-5 h-5 mr-2" />
+                Debug Information
+              </h3>
+              <div className="text-blue-800 space-y-1 text-sm">
+                <p><strong>Plan:</strong> {debugInfo.plan}</p>
+                <p><strong>Price ID:</strong> {debugInfo.priceId}</p>
+                <p><strong>User:</strong> {debugInfo.user}</p>
+                <p><strong>Origin:</strong> {debugInfo.origin}</p>
+                <p><strong>Supabase URL:</strong> {debugInfo.supabaseUrl}</p>
+                <p><strong>Has Supabase Key:</strong> {debugInfo.hasSupabaseKey ? '✅' : '❌'}</p>
+                <p><strong>Has Stripe Key:</strong> {debugInfo.hasStripeKey ? '✅' : '❌'}</p>
+              </div>
             </div>
           </div>
         )}
