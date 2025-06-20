@@ -14,10 +14,28 @@ const Profile: React.FC = () => {
   const [isSaving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [show2FAModal, setShow2FAModal] = useState(false);
+  const [showChangeEmailModal, setShowChangeEmailModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   const [twoFactorStep, setTwoFactorStep] = useState<'setup' | 'verify' | 'success'>('setup');
   const [verificationCode, setVerificationCode] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Change email form state
+  const [emailForm, setEmailForm] = useState({
+    newEmail: '',
+    confirmEmail: '',
+    currentPassword: ''
+  });
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  // Change password form state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordLoading, setPasswordLoading] = useState(false);
   
   const [formData, setFormData] = useState({
     display_name: '',
@@ -227,6 +245,103 @@ const Profile: React.FC = () => {
       }
     } catch (error) {
       setMessage({ type: 'error', text: 'Failed to send test notification' });
+    }
+  };
+
+  // Handle change email
+  const handleChangeEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (emailForm.newEmail !== emailForm.confirmEmail) {
+      setMessage({ type: 'error', text: 'Email addresses do not match' });
+      return;
+    }
+
+    if (!emailForm.currentPassword) {
+      setMessage({ type: 'error', text: 'Current password is required' });
+      return;
+    }
+
+    setEmailLoading(true);
+    
+    try {
+      // In a real implementation, you would call your backend API to change email
+      // This would typically involve:
+      // 1. Verifying the current password
+      // 2. Sending a verification email to the new address
+      // 3. Updating the email after verification
+      
+      // For demo purposes, we'll simulate the process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setMessage({ type: 'success', text: 'Verification email sent to your new address. Please check your inbox.' });
+      setShowChangeEmailModal(false);
+      setEmailForm({ newEmail: '', confirmEmail: '', currentPassword: '' });
+      
+      // Send security notification
+      try {
+        await sendNotification('security_alert', {
+          action: `Email change requested to ${emailForm.newEmail}`,
+          ipAddress: 'Unknown'
+        });
+      } catch (error) {
+        console.warn('Failed to send security notification:', error);
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to change email. Please try again.' });
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  // Handle change password
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setMessage({ type: 'error', text: 'New passwords do not match' });
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setMessage({ type: 'error', text: 'New password must be at least 6 characters long' });
+      return;
+    }
+
+    if (!passwordForm.currentPassword) {
+      setMessage({ type: 'error', text: 'Current password is required' });
+      return;
+    }
+
+    setPasswordLoading(true);
+    
+    try {
+      // In a real implementation, you would call your backend API to change password
+      // This would typically involve:
+      // 1. Verifying the current password
+      // 2. Updating the password in the authentication system
+      // 3. Optionally logging out other sessions
+      
+      // For demo purposes, we'll simulate the process
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setMessage({ type: 'success', text: 'Password changed successfully!' });
+      setShowChangePasswordModal(false);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      
+      // Send security notification
+      try {
+        await sendNotification('security_alert', {
+          action: 'Password changed',
+          ipAddress: 'Unknown'
+        });
+      } catch (error) {
+        console.warn('Failed to send security notification:', error);
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to change password. Please check your current password and try again.' });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -698,11 +813,17 @@ const Profile: React.FC = () => {
             <div className="bg-white rounded-xl p-6 shadow-lg">
               <h3 className="font-semibold text-gray-900 mb-4">Quick Actions</h3>
               <div className="space-y-3">
-                <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3">
+                <button 
+                  onClick={() => setShowChangeEmailModal(true)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3"
+                >
                   <Mail className="w-4 h-4 text-gray-600" />
                   <span className="text-gray-700">Change Email</span>
                 </button>
-                <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3">
+                <button 
+                  onClick={() => setShowChangePasswordModal(true)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3"
+                >
                   <Key className="w-4 h-4 text-gray-600" />
                   <span className="text-gray-700">Change Password</span>
                 </button>
@@ -724,6 +845,168 @@ const Profile: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Change Email Modal */}
+        {showChangeEmailModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Change Email Address</h3>
+                <p className="text-gray-600">Enter your new email address and current password</p>
+              </div>
+
+              <form onSubmit={handleChangeEmail} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Email Address</label>
+                  <input
+                    type="email"
+                    value={emailForm.newEmail}
+                    onChange={(e) => setEmailForm(prev => ({ ...prev, newEmail: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter new email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Email</label>
+                  <input
+                    type="email"
+                    value={emailForm.confirmEmail}
+                    onChange={(e) => setEmailForm(prev => ({ ...prev, confirmEmail: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Confirm new email"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                  <input
+                    type="password"
+                    value={emailForm.currentPassword}
+                    onChange={(e) => setEmailForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangeEmailModal(false);
+                      setEmailForm({ newEmail: '', confirmEmail: '', currentPassword: '' });
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={emailLoading}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                  >
+                    {emailLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Changing...
+                      </>
+                    ) : (
+                      'Change Email'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Change Password Modal */}
+        {showChangePasswordModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-8">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Key className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Change Password</h3>
+                <p className="text-gray-600">Enter your current password and choose a new one</p>
+              </div>
+
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter current password"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter new password"
+                    minLength={6}
+                    required
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Password must be at least 6 characters long</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Confirm new password"
+                    required
+                  />
+                </div>
+
+                <div className="flex space-x-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowChangePasswordModal(false);
+                      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+                    }}
+                    className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={passwordLoading}
+                    className="flex-1 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl hover:from-purple-700 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center"
+                  >
+                    {passwordLoading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        Changing...
+                      </>
+                    ) : (
+                      'Change Password'
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* 2FA Setup Modal */}
         {show2FAModal && (
