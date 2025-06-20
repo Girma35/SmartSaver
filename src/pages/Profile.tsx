@@ -3,11 +3,13 @@ import { User, Mail, Calendar, Settings, Edit3, Save, X, Camera, Shield, Bell, C
 import { useAuth } from '../hooks/useAuth';
 import { useExpenses } from '../hooks/useExpenses';
 import { useProfile } from '../hooks/useProfile';
+import { useNotifications } from '../hooks/useNotifications';
 
 const Profile: React.FC = () => {
   const { user, signOut } = useAuth();
   const { expenses } = useExpenses();
   const { profile, loading, updateProfile, uploadAvatar } = useProfile();
+  const { sendNotification } = useNotifications();
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -152,11 +154,22 @@ const Profile: React.FC = () => {
     setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=otpauth://totp/SmartSaver:${user?.email}?secret=JBSWY3DPEHPK3PXP&issuer=SmartSaver`);
   };
 
-  const verify2FACode = () => {
+  const verify2FACode = async () => {
     // In a real implementation, this would verify the code with your backend
     if (verificationCode.length === 6) {
       setTwoFactorStep('success');
       handleInputChange('two_factor_enabled', true);
+      
+      // Send security alert notification
+      try {
+        await sendNotification('security_alert', {
+          action: 'Two-Factor Authentication enabled',
+          ipAddress: 'Unknown' // In production, you'd get the real IP
+        });
+      } catch (error) {
+        console.warn('Failed to send security notification:', error);
+      }
+      
       setTimeout(() => {
         setShow2FAModal(false);
         setMessage({ type: 'success', text: 'Two-Factor Authentication enabled successfully!' });
@@ -167,9 +180,20 @@ const Profile: React.FC = () => {
     }
   };
 
-  const disable2FA = () => {
+  const disable2FA = async () => {
     if (confirm('Are you sure you want to disable Two-Factor Authentication? This will make your account less secure.')) {
       handleInputChange('two_factor_enabled', false);
+      
+      // Send security alert notification
+      try {
+        await sendNotification('security_alert', {
+          action: 'Two-Factor Authentication disabled',
+          ipAddress: 'Unknown'
+        });
+      } catch (error) {
+        console.warn('Failed to send security notification:', error);
+      }
+      
       setMessage({ type: 'success', text: 'Two-Factor Authentication disabled' });
     }
   };
@@ -179,6 +203,30 @@ const Profile: React.FC = () => {
       disable2FA();
     } else {
       handle2FASetup();
+    }
+  };
+
+  const sendTestNotification = async () => {
+    try {
+      const result = await sendNotification('spending_summary', {
+        period: 'Weekly',
+        totalSpent: totalExpenses,
+        transactionCount: expenses.length,
+        topCategories: [
+          { category: 'Food', amount: 150 },
+          { category: 'Transport', amount: 80 },
+          { category: 'Entertainment', amount: 60 }
+        ],
+        insights: 'You\'re doing great with your spending this week! Consider setting aside more for savings.'
+      });
+
+      if (result.success) {
+        setMessage({ type: 'success', text: 'Test notification sent to your email!' });
+      } else {
+        setMessage({ type: 'error', text: result.error || 'Failed to send test notification' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Failed to send test notification' });
     }
   };
 
@@ -477,19 +525,27 @@ const Profile: React.FC = () => {
                     <Bell className="w-5 h-5 text-gray-600" />
                     <div>
                       <p className="font-medium text-gray-900">Email Notifications</p>
-                      <p className="text-sm text-gray-600">Receive updates about your expenses</p>
+                      <p className="text-sm text-gray-600">Receive updates about your expenses and insights</p>
                     </div>
                   </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      className="sr-only peer" 
-                      checked={formData.notifications_enabled}
-                      onChange={(e) => handleInputChange('notifications_enabled', e.target.checked)}
-                      disabled={!isEditing}
-                    />
-                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
-                  </label>
+                  <div className="flex items-center space-x-3">
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={formData.notifications_enabled}
+                        onChange={(e) => handleInputChange('notifications_enabled', e.target.checked)}
+                        disabled={!isEditing}
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                    <button
+                      onClick={sendTestNotification}
+                      className="text-sm bg-purple-100 text-purple-700 px-3 py-1 rounded-lg hover:bg-purple-200 transition-colors"
+                    >
+                      Test
+                    </button>
+                  </div>
                 </div>
                 
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">

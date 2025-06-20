@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Expense } from '../types';
 import { useAuth } from './useAuth';
+import { useNotifications } from './useNotifications';
 
 export const useExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { sendNotification } = useNotifications();
 
   const fetchExpenses = async () => {
     if (!user) {
@@ -20,7 +22,6 @@ export const useExpenses = () => {
       setLoading(true);
       setError(null);
       
-      // Add timeout and better error handling
       const { data, error: fetchError } = await supabase
         .from('expenses')
         .select('*')
@@ -81,6 +82,20 @@ export const useExpenses = () => {
       };
 
       setExpenses(prev => [newExpense, ...prev]);
+
+      // Send email notification for expense added
+      try {
+        await sendNotification('expense_added', {
+          amount: newExpense.amount,
+          category: newExpense.category,
+          date: newExpense.date,
+          notes: newExpense.notes
+        });
+      } catch (notificationError) {
+        console.warn('Failed to send expense notification:', notificationError);
+        // Don't fail the expense creation if notification fails
+      }
+
       return { data: newExpense, error: null };
     } catch (err) {
       console.error('Error adding expense:', err);
