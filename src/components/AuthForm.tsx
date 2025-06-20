@@ -28,7 +28,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
 
       if (error) {
         // Handle specific case where user already exists during sign up
-        if (isSignUp && error.message.includes('User already registered')) {
+        if (isSignUp && (error.message.includes('User already registered') || error.message.includes('already registered'))) {
           setIsSignUp(false);
           setError('This email is already registered. Please sign in instead.');
         } else {
@@ -42,6 +42,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess }) => {
       }
     } catch (err) {
       setError('An unexpected error occurred');
+      console.error('Auth form error:', err);
     } finally {
       setLoading(false);
     }

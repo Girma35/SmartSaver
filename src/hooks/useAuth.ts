@@ -28,30 +28,61 @@ export const useAuth = () => {
   }, []);
 
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
 
-    // Send welcome email after successful registration
-    if (!error && data.user) {
-      try {
-        await sendWelcomeEmail(data.user.email!, data.user.email?.split('@')[0] || 'User');
-      } catch (emailError) {
-        console.warn('Failed to send welcome email:', emailError);
-        // Don't fail the registration if email fails
+      // Handle the specific case where user already exists
+      if (error && error.message.includes('User already registered')) {
+        return { 
+          data: null, 
+          error: { 
+            ...error, 
+            message: 'This email is already registered. Please sign in instead.' 
+          } 
+        };
       }
-    }
 
-    return { data, error };
+      // Send welcome email after successful registration
+      if (!error && data.user) {
+        try {
+          await sendWelcomeEmail(data.user.email!, data.user.email?.split('@')[0] || 'User');
+        } catch (emailError) {
+          console.warn('Failed to send welcome email:', emailError);
+          // Don't fail the registration if email fails
+        }
+      }
+
+      return { data, error };
+    } catch (err) {
+      // Catch any unexpected errors and return a consistent format
+      return { 
+        data: null, 
+        error: { 
+          message: err instanceof Error ? err.message : 'An unexpected error occurred during signup' 
+        } 
+      };
+    }
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    return { data, error };
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      return { data, error };
+    } catch (err) {
+      // Catch any unexpected errors and return a consistent format
+      return { 
+        data: null, 
+        error: { 
+          message: err instanceof Error ? err.message : 'An unexpected error occurred during sign in' 
+        } 
+      };
+    }
   };
 
   const signOut = async () => {
