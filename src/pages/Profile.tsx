@@ -174,6 +174,14 @@ const Profile: React.FC = () => {
     }
   };
 
+  const toggle2FA = () => {
+    if (formData.two_factor_enabled) {
+      disable2FA();
+    } else {
+      handle2FASetup();
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-100 flex items-center justify-center">
@@ -484,7 +492,7 @@ const Profile: React.FC = () => {
                   </label>
                 </div>
                 
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors duration-200">
                   <div className="flex items-center space-x-3">
                     <Shield className="w-5 h-5 text-gray-600" />
                     <div>
@@ -500,11 +508,11 @@ const Profile: React.FC = () => {
                       </div>
                     )}
                     <button 
-                      onClick={formData.two_factor_enabled ? disable2FA : handle2FASetup}
-                      className={`font-medium ${
+                      onClick={toggle2FA}
+                      className={`px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
                         formData.two_factor_enabled 
-                          ? 'text-red-600 hover:text-red-700' 
-                          : 'text-purple-600 hover:text-purple-700'
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200' 
+                          : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                       }`}
                     >
                       {formData.two_factor_enabled ? 'Disable' : 'Enable'}
@@ -540,8 +548,8 @@ const Profile: React.FC = () => {
               </div>
             </div>
 
-            {/* Security Status */}
-            <div className={`rounded-xl p-6 text-white ${
+            {/* Interactive Security Status */}
+            <div className={`rounded-xl p-6 text-white transition-all duration-300 ${
               formData.two_factor_enabled 
                 ? 'bg-gradient-to-r from-green-500 to-emerald-500' 
                 : 'bg-gradient-to-r from-orange-500 to-red-500'
@@ -555,13 +563,18 @@ const Profile: React.FC = () => {
                   <span>Password Protection</span>
                   <CheckCircle className="w-5 h-5" />
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between cursor-pointer hover:bg-white/10 p-2 rounded-lg transition-colors duration-200" onClick={toggle2FA}>
                   <span>Two-Factor Auth</span>
-                  {formData.two_factor_enabled ? (
-                    <CheckCircle className="w-5 h-5" />
-                  ) : (
-                    <X className="w-5 h-5" />
-                  )}
+                  <div className="flex items-center space-x-2">
+                    {formData.two_factor_enabled ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <X className="w-5 h-5" />
+                    )}
+                    <button className="text-xs bg-white/20 hover:bg-white/30 px-2 py-1 rounded transition-colors duration-200">
+                      {formData.two_factor_enabled ? 'Disable' : 'Enable'}
+                    </button>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span>Email Verified</span>
@@ -636,6 +649,13 @@ const Profile: React.FC = () => {
                 <button className="w-full text-left p-3 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-3">
                   <Key className="w-4 h-4 text-gray-600" />
                   <span className="text-gray-700">Change Password</span>
+                </button>
+                <button 
+                  onClick={toggle2FA}
+                  className="w-full text-left p-3 rounded-lg hover:bg-purple-50 transition-colors duration-200 flex items-center space-x-3 text-purple-600"
+                >
+                  <Shield className="w-4 h-4" />
+                  <span>{formData.two_factor_enabled ? 'Manage 2FA' : 'Setup 2FA'}</span>
                 </button>
                 <button 
                   onClick={signOut}
