@@ -32,20 +32,22 @@ export const useProfile = () => {
 
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First, try to fetch existing profile
+      const { data: existingProfile, error: fetchError } = await supabase
         .from('user_profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid error when no rows
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error;
+      if (fetchError) {
+        throw fetchError;
       }
 
-      if (data) {
-        setProfile(data);
+      if (existingProfile) {
+        setProfile(existingProfile);
       } else {
-        // Create default profile if none exists
+        // Create default profile using upsert to handle race conditions
         const defaultProfile = {
           user_id: user.id,
           display_name: user.email?.split('@')[0] || 'User',
@@ -53,32 +55,29 @@ export const useProfile = () => {
           financial_goals: ['Build Emergency Fund', 'Save for Vacation', 'Invest in Retirement']
         };
 
-        const { data: newProfile, error: createError } = await supabase
+        const { error: upsertError } = await supabase
           .from('user_profiles')
-          .insert(defaultProfile)
-          .select()
+          .upsert(defaultProfile, { 
+            onConflict: 'user_id',
+            ignoreDuplicates: true 
+          });
+
+        if (upsertError) {
+          throw upsertError;
+        }
+
+        // Fetch the profile after upsert to get the complete data
+        const { data: newProfile, error: refetchError } = await supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
           .single();
 
-        if (createError) {
-          // Handle race condition: if profile was created by another concurrent call
-          if (createError.code === '23505') {
-            // Duplicate key violation - profile was created by another process
-            // Fetch the existing profile
-            const { data: existingProfile, error: fetchError } = await supabase
-              .from('user_profiles')
-              .select('*')
-              .eq('user_id', user.id)
-              .single();
-
-            if (fetchError) throw fetchError;
-            setProfile(existingProfile);
-          } else {
-            // Re-throw any other error
-            throw createError;
-          }
-        } else {
-          setProfile(newProfile);
+        if (refetchError) {
+          throw refetchError;
         }
+
+        setProfile(newProfile);
       }
       
       setError(null);
