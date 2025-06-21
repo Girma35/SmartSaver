@@ -14,6 +14,7 @@ const NotificationContainer: React.FC = () => {
            !n.read_at && 
            !n.dismissed_at && 
            n.created_at && // Ensure created_at exists
+           !isNaN(new Date(n.created_at).getTime()) && // Ensure created_at is a valid date
            // Only show notifications from the last 5 minutes
            new Date(n.created_at).getTime() > Date.now() - 5 * 60 * 1000
     );
