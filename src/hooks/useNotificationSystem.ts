@@ -307,14 +307,23 @@ export const useNotificationSystem = () => {
     if (!user) return () => {};
 
     try {
+      // Use a stable channel name based on user ID
+      const channelName = `notifications:${user.id}`;
+
       // Clean up existing channel if it exists
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
       }
 
-      // Create a new channel with a unique name
-      const channelName = `notifications-${user.id}-${Date.now()}`;
+      // Check for and remove any existing channels with the same name
+      const existingChannels = supabase.getChannels();
+      const existingChannel = existingChannels.find(ch => ch.topic === channelName);
+      if (existingChannel) {
+        supabase.removeChannel(existingChannel);
+      }
+
+      // Create a new channel with the stable name
       const channel = supabase.channel(channelName);
 
       // Set up the postgres changes listener
