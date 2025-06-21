@@ -97,7 +97,7 @@ const NotificationBar: React.FC = () => {
     <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-12">
-          {/* Left side - Notification icon and count */}
+          {/* Left side - Notification icon and count only */}
           <div className="flex items-center space-x-3">
             <div className="relative">
               <button
@@ -112,9 +112,6 @@ const NotificationBar: React.FC = () => {
                     </div>
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  {summary.unread_count} notification{summary.unread_count !== 1 ? 's' : ''}
-                </span>
                 <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
               </button>
             </div>
@@ -122,12 +119,6 @@ const NotificationBar: React.FC = () => {
 
           {/* Right side - Actions */}
           <div className="flex items-center space-x-2">
-            <button
-              onClick={handleMarkAllAsRead}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              Mark all as read
-            </button>
             <button
               onClick={handleDismissAll}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
@@ -150,6 +141,12 @@ const NotificationBar: React.FC = () => {
                   Notifications
                 </h3>
                 <div className="flex items-center space-x-3">
+                  <button
+                    onClick={handleMarkAllAsRead}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium px-2 py-1 rounded hover:bg-blue-50 transition-colors"
+                  >
+                    Mark all as read
+                  </button>
                   <button className="text-xs text-gray-600 hover:text-gray-800 transition-colors flex items-center space-x-1">
                     <Settings className="w-3 h-3" />
                     <span>Settings</span>
