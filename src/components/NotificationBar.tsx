@@ -9,19 +9,20 @@ import {
   TrendingUp,
   CheckCircle,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Settings,
+  MoreHorizontal
 } from 'lucide-react';
 import { useNotificationSystem } from '../hooks/useNotificationSystem';
 import { Notification } from '../types/notifications';
 
 const NotificationBar: React.FC = () => {
-  const { notifications, markNotificationAsRead, dismissNotification } = useNotificationSystem();
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { notifications, markNotificationAsRead, dismissNotification, getNotificationSummary } = useNotificationSystem();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
 
-  // Get unread notifications
+  const summary = getNotificationSummary();
   const unreadNotifications = notifications.filter(n => !n.read_at && !n.dismissed_at);
-  const latestNotification = unreadNotifications[0];
 
   useEffect(() => {
     setIsVisible(unreadNotifications.length > 0);
@@ -57,6 +58,17 @@ const NotificationBar: React.FC = () => {
     }
   };
 
+  const formatTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+    return `${Math.floor(diffInMinutes / 1440)}d ago`;
+  };
+
   const handleMarkAsRead = async (notification: Notification) => {
     await markNotificationAsRead(notification.id);
   };
@@ -65,115 +77,85 @@ const NotificationBar: React.FC = () => {
     await dismissNotification(notification.id);
   };
 
+  const handleMarkAllAsRead = async () => {
+    for (const notification of unreadNotifications) {
+      await markNotificationAsRead(notification.id);
+    }
+    setIsDropdownOpen(false);
+  };
+
   const handleDismissAll = async () => {
     for (const notification of unreadNotifications) {
       await dismissNotification(notification.id);
     }
-    setIsExpanded(false);
+    setIsDropdownOpen(false);
   };
 
   if (!isVisible) return null;
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50">
-      {/* Main notification bar */}
-      <div className={`bg-white border-b border-gray-200 shadow-lg transform transition-all duration-300 ease-in-out ${
-        isVisible ? 'translate-y-0' : '-translate-y-full'
-      }`}>
-        {/* Collapsed view */}
-        <div className="px-4 py-3">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
-            <div className="flex items-center space-x-3">
-              {/* Notification indicator */}
-              <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-                  <Bell className="w-4 h-4 text-white" />
+    <div className="fixed top-0 left-0 right-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex items-center justify-between h-12">
+          {/* Left side - Notification icon and count */}
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="relative">
+                  <Bell className="w-5 h-5 text-gray-700" />
+                  {summary.unread_count > 0 && (
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {summary.unread_count > 9 ? '9+' : summary.unread_count}
+                    </div>
+                  )}
                 </div>
-                {unreadNotifications.length > 0 && (
-                  <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                    {unreadNotifications.length > 9 ? '9+' : unreadNotifications.length}
-                  </div>
-                )}
-              </div>
-
-              {/* Latest notification preview */}
-              {latestNotification && (
-                <div className="flex items-center space-x-3">
-                  {getNotificationIcon(latestNotification.type)}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {latestNotification.title}
-                    </p>
-                    <p className="text-xs text-gray-600 truncate">
-                      {latestNotification.message}
-                    </p>
-                  </div>
-                  <div className={`w-2 h-2 rounded-full ${getPriorityColor(latestNotification.priority)}`}></div>
-                </div>
-              )}
-
-              {/* Multiple notifications indicator */}
-              {unreadNotifications.length > 1 && (
-                <div className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-                  +{unreadNotifications.length - 1} more
-                </div>
-              )}
+                <span className="text-sm font-medium text-gray-700">
+                  {summary.unread_count} notification{summary.unread_count !== 1 ? 's' : ''}
+                </span>
+                <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
             </div>
+          </div>
 
-            {/* Actions */}
-            <div className="flex items-center space-x-2">
-              {latestNotification && (
-                <>
-                  <button
-                    onClick={() => handleMarkAsRead(latestNotification)}
-                    className="p-1 text-gray-400 hover:text-green-600 transition-colors"
-                    title="Mark as read"
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDismiss(latestNotification)}
-                    className="p-1 text-gray-400 hover:text-red-600 transition-colors"
-                    title="Dismiss"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </>
-              )}
-              
-              {unreadNotifications.length > 1 && (
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
-                  title={isExpanded ? "Collapse" : "Show all"}
-                >
-                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </button>
-              )}
-            </div>
+          {/* Right side - Actions */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleMarkAllAsRead}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium px-3 py-1 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Mark all as read
+            </button>
+            <button
+              onClick={handleDismissAll}
+              className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              title="Dismiss all"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
-        {/* Expanded view */}
-        <div className={`border-t border-gray-100 bg-gray-50 transition-all duration-300 ease-in-out overflow-hidden ${
-          isExpanded ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        {/* Dropdown Panel */}
+        <div className={`absolute left-0 right-0 bg-white border-t border-gray-200 shadow-lg transition-all duration-200 ease-in-out ${
+          isDropdownOpen ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}>
           <div className="max-w-7xl mx-auto">
             {/* Header */}
-            <div className="px-4 py-3 border-b border-gray-200 bg-white">
+            <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-semibold text-gray-900">
-                  All Notifications ({unreadNotifications.length})
+                  Notifications
                 </h3>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleDismissAll}
-                    className="text-xs text-gray-600 hover:text-gray-800 transition-colors"
-                  >
-                    Dismiss All
+                <div className="flex items-center space-x-3">
+                  <button className="text-xs text-gray-600 hover:text-gray-800 transition-colors flex items-center space-x-1">
+                    <Settings className="w-3 h-3" />
+                    <span>Settings</span>
                   </button>
                   <button
-                    onClick={() => setIsExpanded(false)}
+                    onClick={() => setIsDropdownOpen(false)}
                     className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                   >
                     <X className="w-4 h-4" />
@@ -182,75 +164,99 @@ const NotificationBar: React.FC = () => {
               </div>
             </div>
 
-            {/* Notifications list */}
-            <div className="max-h-64 overflow-y-auto">
-              {unreadNotifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className="px-4 py-3 border-b border-gray-100 hover:bg-white transition-colors"
-                >
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 mt-1">
-                      {getNotificationIcon(notification.type)}
-                    </div>
-                    
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <h4 className="text-sm font-medium text-gray-900 truncate">
-                          {notification.title}
-                        </h4>
-                        <div className="flex items-center space-x-2">
-                          <div className={`w-2 h-2 rounded-full ${getPriorityColor(notification.priority)}`}></div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(notification.created_at).toLocaleTimeString([], { 
-                              hour: '2-digit', 
-                              minute: '2-digit' 
-                            })}
-                          </span>
+            {/* Notifications List */}
+            <div className="max-h-80 overflow-y-auto">
+              {unreadNotifications.length === 0 ? (
+                <div className="text-center py-8">
+                  <Bell className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                  <h3 className="text-sm font-medium text-gray-900 mb-1">No new notifications</h3>
+                  <p className="text-xs text-gray-500">You're all caught up!</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {unreadNotifications.slice(0, 10).map((notification) => (
+                    <div
+                      key={notification.id}
+                      className="px-4 py-3 hover:bg-gray-50 transition-colors group"
+                    >
+                      <div className="flex items-start space-x-3">
+                        {/* Icon */}
+                        <div className="flex-shrink-0 mt-1">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="text-sm font-medium text-gray-900 mb-1">
+                                {notification.title}
+                              </h4>
+                              <p className="text-sm text-gray-600 leading-relaxed mb-2">
+                                {notification.message}
+                              </p>
+                              <div className="flex items-center space-x-3">
+                                <span className="text-xs text-gray-500">
+                                  {formatTimeAgo(notification.created_at)}
+                                </span>
+                                <div className={`w-2 h-2 rounded-full ${getPriorityColor(notification.priority)}`}></div>
+                                <span className="text-xs text-gray-500 capitalize">
+                                  {notification.priority}
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Actions */}
+                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={() => handleMarkAsRead(notification)}
+                                className="p-1 text-gray-400 hover:text-green-600 transition-colors"
+                                title="Mark as read"
+                              >
+                                <CheckCircle className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDismiss(notification)}
+                                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                                title="Dismiss"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                              <button className="p-1 text-gray-400 hover:text-gray-600 transition-colors">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      
-                      <p className="text-xs text-gray-600 mb-2 line-clamp-2">
-                        {notification.message}
-                      </p>
-                      
-                      <div className="flex items-center space-x-3">
-                        <button
-                          onClick={() => handleMarkAsRead(notification)}
-                          className="text-xs text-green-600 hover:text-green-700 font-medium"
-                        >
-                          Mark as Read
-                        </button>
-                        <button
-                          onClick={() => handleDismiss(notification)}
-                          className="text-xs text-gray-600 hover:text-gray-700 font-medium"
-                        >
-                          Dismiss
-                        </button>
-                      </div>
                     </div>
-                  </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 bg-white border-t border-gray-200">
-              <div className="text-center">
-                <button className="text-xs text-purple-600 hover:text-purple-700 font-medium">
-                  View All Notifications
-                </button>
+            {unreadNotifications.length > 0 && (
+              <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-500">
+                    Showing {Math.min(unreadNotifications.length, 10)} of {unreadNotifications.length} notifications
+                  </span>
+                  <button className="text-xs text-blue-600 hover:text-blue-700 font-medium">
+                    View all notifications
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Backdrop for mobile */}
-      {isExpanded && (
+      {/* Backdrop */}
+      {isDropdownOpen && (
         <div 
-          className="fixed inset-0 bg-black bg-opacity-25 lg:hidden"
-          onClick={() => setIsExpanded(false)}
+          className="fixed inset-0 bg-black bg-opacity-25 z-[-1]"
+          onClick={() => setIsDropdownOpen(false)}
         />
       )}
     </div>
