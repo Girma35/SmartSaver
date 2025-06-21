@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { 
   NotificationPreferences, 
@@ -17,6 +17,7 @@ export const useNotificationSystem = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  const channelRef = useRef<any>(null);
 
   const fetchPreferences = async () => {
     if (!user) return;
@@ -303,11 +304,24 @@ export const useNotificationSystem = () => {
   };
 
   const setupRealtimeSubscription = () => {
-    if (!user) return;
+    if (!user) return () => {};
 
     try {
-      const subscription = supabase
-        .channel('notifications')
+      // Clean up any existing channel
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+
+      // Create a new channel with a unique name
+      const channelName = `notifications-${user.id}-${Date.now()}`;
+      const channel = supabase.channel(channelName);
+      
+      // Store the channel reference
+      channelRef.current = channel;
+
+      // Set up the subscription
+      channel
         .on(
           'postgres_changes',
           {
@@ -323,7 +337,10 @@ export const useNotificationSystem = () => {
         .subscribe();
 
       return () => {
-        subscription.unsubscribe();
+        if (channelRef.current) {
+          supabase.removeChannel(channelRef.current);
+          channelRef.current = null;
+        }
       };
     } catch (err) {
       console.error('Error setting up realtime subscription:', err);
@@ -355,6 +372,12 @@ export const useNotificationSystem = () => {
       // Setup real-time subscription with error handling
       const unsubscribe = setupRealtimeSubscription();
       return unsubscribe;
+    } else {
+      // Clean up when user logs out
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
     }
   }, [user]);
 
