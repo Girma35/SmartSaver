@@ -340,14 +340,17 @@ export const useNotificationSystem = () => {
         }
       );
 
-      // Subscribe to the channel
-      channel.subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Successfully subscribed to notifications channel');
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('Error subscribing to notifications channel');
-        }
-      });
+      // Check if channel is already subscribed before subscribing
+      if (channel.state !== 'subscribed' && channel.state !== 'joining') {
+        // Subscribe to the channel
+        channel.subscribe((status) => {
+          if (status === 'SUBSCRIBED') {
+            console.log('Successfully subscribed to notifications channel');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('Error subscribing to notifications channel');
+          }
+        });
+      }
 
       // Store the channel reference
       channelRef.current = channel;
