@@ -37,7 +37,7 @@ const NotificationContainer: React.FC = () => {
         return prevActiveToasts;
       });
     }
-  }, [notifications]); // Removed activeToasts from dependency array
+  }, [notifications, activeToasts]); // Added activeToasts to dependency array
 
   const handleDismissToast = (notificationId: string) => {
     setActiveToasts(prev => prev.filter(toast => toast && toast.id !== notificationId));
