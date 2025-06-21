@@ -30,6 +30,10 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     setIsMobileMenuOpen(false);
   };
 
+  const handleLogoClick = () => {
+    onPageChange('home');
+  };
+
   return (
     <>
       <nav className="bg-white shadow-lg border-b sticky top-0 z-30">
@@ -37,14 +41,17 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
             <div className="flex items-center">
-              <div className="flex items-center space-x-2">
+              <button 
+                onClick={handleLogoClick}
+                className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
+              >
                 <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                   <BarChart3 className="w-5 h-5 text-white" />
                 </div>
                 <span className="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                   SmartSaver
                 </span>
-              </div>
+              </button>
             </div>
             
             {/* Desktop Navigation */}
@@ -98,14 +105,20 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
             <div className="p-6">
               {/* Mobile Header */}
               <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center space-x-2">
+                <button 
+                  onClick={() => {
+                    handleLogoClick();
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
+                >
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
                     <BarChart3 className="w-5 h-5 text-white" />
                   </div>
                   <span className="text-lg font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
                     SmartSaver
                   </span>
-                </div>
+                </button>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
