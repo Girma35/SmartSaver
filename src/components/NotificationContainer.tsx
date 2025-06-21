@@ -36,3 +36,5 @@ const NotificationContainerContent: React.FC = () => {
     </div>
   );
 };
+
+export default NotificationContainer
