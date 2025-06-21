@@ -8,7 +8,7 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
-  const { user } = useAuth();
+  const { signOut, user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -16,7 +16,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'accounts', label: 'Accounts', icon: Building2 },
     { id: 'ai', label: 'AI Assistant', icon: MessageCircle },
-    { id: 'pricing', label: 'Pricing', icon: CreditCard },
     { id: 'profile', label: 'Profile', icon: User },
   ];
 
@@ -27,6 +26,11 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
 
   const handleLogoClick = () => {
     onPageChange('home');
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -68,6 +72,33 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   </button>
                 );
               })}
+              
+              <div className="flex items-center space-x-4 ml-4 pl-4 border-l">
+                {/* Pricing Button */}
+                <button
+                  onClick={() => handlePageChange('pricing')}
+                  className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-blue-700 transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Upgrade</span>
+                </button>
+                
+                <div className="flex items-center space-x-3">
+                  <img 
+                    src="/photo_2025-05-19_22-40-08.jpg" 
+                    alt="Profile"
+                    className="w-8 h-8 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-purple-300 transition-all duration-200"
+                    onClick={() => handlePageChange('profile')}
+                  />
+                  <span className="text-sm text-gray-600 hidden xl:inline">{user?.email}</span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
+                >
+                  <span>Sign Out</span>
+                </button>
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -130,8 +161,19 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                 </div>
               </div>
 
+              {/* Pricing Button - Mobile */}
+              <div className="mb-6">
+                <button
+                  onClick={() => handlePageChange('pricing')}
+                  className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg"
+                >
+                  <CreditCard className="w-5 h-5" />
+                  <span>Upgrade to Premium</span>
+                </button>
+              </div>
+
               {/* Mobile Navigation Items */}
-              <div className="space-y-2">
+              <div className="space-y-2 mb-8">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -150,6 +192,14 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   );
                 })}
               </div>
+
+              {/* Mobile Sign Out */}
+              <button
+                onClick={handleSignOut}
+                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
+              >
+                <span>Sign Out</span>
+              </button>
             </div>
           </div>
         </div>
