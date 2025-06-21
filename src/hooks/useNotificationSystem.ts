@@ -31,32 +31,10 @@ export const useNotificationSystem = () => {
       if (error) throw error;
 
       if (!data) {
-        // Create default preferences with explicit values
+        // Create default preferences
         const { data: newPrefs, error: createError } = await supabase
           .from('notification_preferences')
-          .insert({ 
-            user_id: user.id,
-            email_enabled: true,
-            push_enabled: true,
-            sms_enabled: false,
-            in_app_enabled: true,
-            low_balance_enabled: true,
-            low_balance_threshold: 100.00,
-            suspicious_activity_enabled: true,
-            suspicious_threshold_multiplier: 3.0,
-            overspending_enabled: true,
-            overspending_threshold_percent: 0.20,
-            recurring_bills_enabled: true,
-            recurring_bills_days_ahead: 3,
-            large_transaction_enabled: true,
-            large_transaction_threshold: 500.00,
-            weekly_summary_enabled: true,
-            monthly_summary_enabled: true,
-            quiet_hours_enabled: false,
-            quiet_hours_start: '22:00:00',
-            quiet_hours_end: '08:00:00',
-            quiet_hours_timezone: 'UTC'
-          })
+          .insert({ user_id: user.id })
           .select()
           .single();
 
@@ -267,7 +245,7 @@ export const useNotificationSystem = () => {
     if (!user) return { error: 'User not authenticated' };
 
     try {
-      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-notification`;
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/notification-engine`;
       
       const headers = {
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
@@ -278,7 +256,7 @@ export const useNotificationSystem = () => {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          type,
+          type: 'test_notification',
           userId: user.id,
           testMode: true
         })
@@ -289,6 +267,10 @@ export const useNotificationSystem = () => {
       }
 
       const result = await response.json();
+      
+      // Refresh notifications to show the new test notification
+      await fetchNotifications();
+      
       return { data: result, error: null };
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to send test notification';
@@ -298,11 +280,11 @@ export const useNotificationSystem = () => {
   };
 
   const getNotificationSummary = (): NotificationSummary => {
-    const unread_count = notifications.filter(n => !n.read_at).length;
-    const urgent_count = notifications.filter(n => n.priority === 'urgent' && !n.read_at).length;
-    const recent_notifications = notifications.slice(0, 5);
+    const unread_count = notifications.filter(n => !n.read_at && !n.dismissed_at).length;
+    const urgent_count = notifications.filter(n => n.priority === 'urgent' && !n.read_at && !n.dismissed_at).length;
+    const recent_notifications = notifications.filter(n => !n.dismissed_at).slice(0, 5);
     const alert_rules_active = alertRules.filter(r => r.is_active).length;
-    const last_notification_at = notifications[0]?.created_at;
+    const last_notification_at = notifications.find(n => !n.dismissed_at)?.created_at;
 
     return {
       unread_count,

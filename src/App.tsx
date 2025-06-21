@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Navigation from './components/Navigation';
+import NotificationBar from './components/NotificationBar';
+import NotificationContainer from './components/NotificationContainer';
 import AuthForm from './components/AuthForm';
 import Landing from './pages/Landing';
 import AddExpense from './pages/AddExpense';
@@ -116,10 +118,23 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Notification Bar - appears at the top */}
+      {user && <NotificationBar />}
+      
+      {/* Navigation - adjusted for notification bar */}
       {currentPage !== 'home' && currentPage !== 'success' && (
-        <Navigation currentPage={currentPage} onPageChange={handlePageChange} />
+        <div className="pt-0">
+          <Navigation currentPage={currentPage} onPageChange={handlePageChange} />
+        </div>
       )}
-      {renderCurrentPage()}
+      
+      {/* Main content - adjusted for notification bar */}
+      <div className={user ? 'pt-0' : ''}>
+        {renderCurrentPage()}
+      </div>
+      
+      {/* Toast notifications */}
+      {user && <NotificationContainer />}
     </div>
   );
 }

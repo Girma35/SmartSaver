@@ -38,7 +38,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
 
   return (
     <>
-      <nav className="bg-white shadow-lg border-b sticky top-0 z-40">
+      <nav className="bg-white shadow-lg border-b sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex justify-between items-center h-16">
             {/* Logo */}
