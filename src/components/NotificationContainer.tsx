@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNotificationSystem } from '../hooks/useNotificationSystem';
-import { NotificationToast } from './NotificationToast';
+import NotificationToast from './NotificationToast';
 import { ErrorBoundary } from './ErrorBoundary';
 
 export const NotificationContainer: React.FC = () => {
