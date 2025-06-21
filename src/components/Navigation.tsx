@@ -8,7 +8,7 @@ interface NavigationProps {
 }
 
 const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
-  const { signOut, user } = useAuth();
+  const { user } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -26,11 +26,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
 
   const handleLogoClick = () => {
     onPageChange('home');
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -83,21 +78,13 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   <span>Upgrade</span>
                 </button>
                 
-                <div className="flex items-center space-x-3">
-                  <img 
-                    src="/photo_2025-05-19_22-40-08.jpg" 
-                    alt="Profile"
-                    className="w-8 h-8 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-purple-300 transition-all duration-200"
-                    onClick={() => handlePageChange('profile')}
-                  />
-                  <span className="text-sm text-gray-600 hidden xl:inline">{user?.email}</span>
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-all duration-200"
-                >
-                  <span>Sign Out</span>
-                </button>
+                {/* Profile Image Only */}
+                <img 
+                  src="/photo_2025-05-19_22-40-08.jpg" 
+                  alt="Profile"
+                  className="w-8 h-8 rounded-lg object-cover cursor-pointer hover:ring-2 hover:ring-purple-300 transition-all duration-200"
+                  onClick={() => handlePageChange('profile')}
+                />
               </div>
             </div>
 
@@ -148,17 +135,13 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                 </button>
               </div>
 
-              {/* User Info */}
-              <div className="flex items-center space-x-3 mb-8 p-4 bg-gray-50 rounded-xl">
+              {/* User Info - Profile Image Only */}
+              <div className="flex items-center justify-center mb-8 p-4 bg-gray-50 rounded-xl">
                 <img 
                   src="/photo_2025-05-19_22-40-08.jpg" 
                   alt="Profile"
-                  className="w-12 h-12 rounded-xl object-cover"
+                  className="w-16 h-16 rounded-xl object-cover"
                 />
-                <div>
-                  <div className="font-medium text-gray-900">Welcome back!</div>
-                  <div className="text-sm text-gray-600">{user?.email}</div>
-                </div>
               </div>
 
               {/* Pricing Button - Mobile */}
@@ -173,7 +156,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
               </div>
 
               {/* Mobile Navigation Items */}
-              <div className="space-y-2 mb-8">
+              <div className="space-y-2">
                 {navItems.map((item) => {
                   const Icon = item.icon;
                   return (
@@ -192,14 +175,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   );
                 })}
               </div>
-
-              {/* Mobile Sign Out */}
-              <button
-                onClick={handleSignOut}
-                className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium text-red-600 hover:bg-red-50 transition-all duration-200"
-              >
-                <span>Sign Out</span>
-              </button>
             </div>
           </div>
         </div>
