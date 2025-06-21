@@ -20,12 +20,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
   ];
 
   const handlePageChange = (page: string) => {
+    console.log('Navigation: Changing page to', page); // Debug log
     onPageChange(page);
     setIsMobileMenuOpen(false);
   };
 
   const handleLogoClick = () => {
     onPageChange('home');
+    setIsMobileMenuOpen(false);
+  };
+
+  // Close mobile menu when clicking outside
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget) {
+      setIsMobileMenuOpen(false);
+    }
   };
 
   return (
@@ -93,6 +102,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                aria-label="Toggle mobile menu"
               >
                 {isMobileMenuOpen ? (
                   <X className="w-6 h-6" />
@@ -108,16 +118,21 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="fixed top-0 right-0 w-80 h-full bg-white shadow-xl transform transition-transform duration-300">
-            <div className="p-6">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 transition-opacity" 
+            onClick={handleOverlayClick}
+          />
+          
+          {/* Slide-out Menu */}
+          <div className={`fixed top-0 right-0 w-80 h-full bg-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+            isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+          }`}>
+            <div className="flex flex-col h-full">
               {/* Mobile Header */}
-              <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center justify-between p-6 border-b border-gray-200">
                 <button 
-                  onClick={() => {
-                    handleLogoClick();
-                    setIsMobileMenuOpen(false);
-                  }}
+                  onClick={handleLogoClick}
                   className="flex items-center space-x-2 hover:opacity-80 transition-opacity cursor-pointer"
                 >
                   <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-lg flex items-center justify-center">
@@ -130,22 +145,29 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  aria-label="Close mobile menu"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* User Info - Profile Image Only */}
-              <div className="flex items-center justify-center mb-8 p-4 bg-gray-50 rounded-xl">
-                <img 
-                  src="/photo_2025-05-19_22-40-08.jpg" 
-                  alt="Profile"
-                  className="w-16 h-16 rounded-xl object-cover"
-                />
+              <div className="flex items-center justify-center p-6 bg-gray-50 border-b border-gray-200">
+                <button
+                  onClick={() => handlePageChange('profile')}
+                  className="flex flex-col items-center space-y-2 hover:opacity-80 transition-opacity"
+                >
+                  <img 
+                    src="/photo_2025-05-19_22-40-08.jpg" 
+                    alt="Profile"
+                    className="w-16 h-16 rounded-xl object-cover ring-2 ring-purple-200"
+                  />
+                  <span className="text-sm text-gray-600">View Profile</span>
+                </button>
               </div>
 
               {/* Pricing Button - Mobile */}
-              <div className="mb-6">
+              <div className="p-6 border-b border-gray-200">
                 <button
                   onClick={() => handlePageChange('pricing')}
                   className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-semibold hover:from-purple-700 hover:to-blue-700 transition-all duration-200 shadow-lg"
@@ -156,24 +178,36 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
               </div>
 
               {/* Mobile Navigation Items */}
-              <div className="space-y-2">
-                {navItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handlePageChange(item.id)}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 ${
-                        currentPage === item.id
-                          ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
-                          : 'text-gray-700 hover:bg-gray-100'
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span>{item.label}</span>
-                    </button>
-                  );
-                })}
+              <div className="flex-1 p-6">
+                <nav className="space-y-2">
+                  {navItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          console.log('Mobile nav: Clicking', item.id); // Debug log
+                          handlePageChange(item.id);
+                        }}
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 ${
+                          currentPage === item.id
+                            ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
+                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 flex-shrink-0" />
+                        <span className="flex-1">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </nav>
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <p className="text-xs text-gray-500 text-center">
+                  SmartSaver - Your AI-Powered Finance Assistant
+                </p>
               </div>
             </div>
           </div>
