@@ -90,6 +90,11 @@ export const useNotificationSystem = () => {
     if (!user) return;
 
     try {
+      // Check if Supabase client is properly configured
+      if (!supabase) {
+        throw new Error('Supabase client not initialized');
+      }
+
       const { data, error } = await supabase
         .from('recurring_bills')
         .select('*')
@@ -101,7 +106,9 @@ export const useNotificationSystem = () => {
       setRecurringBills(data || []);
     } catch (err) {
       console.error('Error fetching recurring bills:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch recurring bills');
+      // Don't set the main error state for this specific fetch failure
+      // Just log it and continue with empty array
+      setRecurringBills([]);
     }
   };
 
@@ -298,38 +305,54 @@ export const useNotificationSystem = () => {
   const setupRealtimeSubscription = () => {
     if (!user) return;
 
-    const subscription = supabase
-      .channel('notifications')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'notifications',
-          filter: `user_id=eq.${user.id}`
-        },
-        (payload) => {
-          setNotifications(prev => [payload.new as Notification, ...prev]);
-        }
-      )
-      .subscribe();
+    try {
+      const subscription = supabase
+        .channel('notifications')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${user.id}`
+          },
+          (payload) => {
+            setNotifications(prev => [payload.new as Notification, ...prev]);
+          }
+        )
+        .subscribe();
 
-    return () => {
-      subscription.unsubscribe();
-    };
+      return () => {
+        subscription.unsubscribe();
+      };
+    } catch (err) {
+      console.error('Error setting up realtime subscription:', err);
+      return () => {}; // Return empty cleanup function
+    }
   };
 
   useEffect(() => {
     if (user) {
       setLoading(true);
-      Promise.all([
+      setError(null); // Clear any previous errors
+      
+      // Fetch data with proper error handling
+      Promise.allSettled([
         fetchPreferences(),
         fetchNotifications(),
         fetchAlertRules(),
         fetchRecurringBills()
-      ]).finally(() => setLoading(false));
+      ]).then((results) => {
+        // Check if any critical operations failed
+        const criticalFailures = results.slice(0, 3).filter(result => result.status === 'rejected');
+        if (criticalFailures.length > 0) {
+          console.error('Some critical operations failed:', criticalFailures);
+        }
+      }).finally(() => {
+        setLoading(false);
+      });
 
-      // Setup real-time subscription
+      // Setup real-time subscription with error handling
       const unsubscribe = setupRealtimeSubscription();
       return unsubscribe;
     }
@@ -351,10 +374,13 @@ export const useNotificationSystem = () => {
     testNotification,
     getNotificationSummary,
     refetch: () => {
-      fetchPreferences();
-      fetchNotifications();
-      fetchAlertRules();
-      fetchRecurringBills();
+      setError(null);
+      Promise.allSettled([
+        fetchPreferences(),
+        fetchNotifications(),
+        fetchAlertRules(),
+        fetchRecurringBills()
+      ]);
     }
   };
 };

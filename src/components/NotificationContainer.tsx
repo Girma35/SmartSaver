@@ -1,68 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useNotificationSystem } from '../hooks/useNotificationSystem';
-import NotificationToast from './NotificationToast';
-import { Notification } from '../types/notifications';
+import { NotificationToast } from './NotificationToast';
+import { ErrorBoundary } from './ErrorBoundary';
 
-const NotificationContainer: React.FC = () => {
+export const NotificationContainer: React.FC = () => {
+  return (
+    <ErrorBoundary>
+      <NotificationContainerContent />
+    </ErrorBoundary>
+  );
+};
+
+const NotificationContainerContent: React.FC = () => {
   const { notifications, markNotificationAsRead, dismissNotification } = useNotificationSystem();
-  const [activeToasts, setActiveToasts] = useState<Notification[]>([]);
 
-  useEffect(() => {
-    // Show new unread notifications as toasts
-    const newNotifications = notifications.filter(
-      n => n && // Ensure notification object exists
-           !n.read_at && 
-           !n.dismissed_at && 
-           n.created_at && // Ensure created_at exists
-           !isNaN(new Date(n.created_at).getTime()) && // Ensure created_at is a valid date
-           // Only show notifications from the last 5 minutes
-           new Date(n.created_at).getTime() > Date.now() - 5 * 60 * 1000
-    );
+  // Only show unread, non-dismissed notifications
+  const activeNotifications = notifications.filter(
+    notification => !notification.read_at && !notification.dismissed_at
+  );
 
-    if (newNotifications.length > 0) {
-      setActiveToasts(prevActiveToasts => {
-        // Filter out notifications that are already showing as toasts
-        const filteredNewNotifications = newNotifications.filter(
-          n => n && n.id && // Ensure notification and id exist
-               !prevActiveToasts.some(toast => toast && toast.id && toast.id === n.id)
-        );
-        
-        if (filteredNewNotifications.length > 0) {
-          // Max 3 toasts total
-          const availableSlots = Math.max(0, 3 - prevActiveToasts.length);
-          const toastsToAdd = filteredNewNotifications.slice(0, availableSlots);
-          return [...prevActiveToasts, ...toastsToAdd];
-        }
-        
-        return prevActiveToasts;
-      });
-    }
-  }, [notifications, activeToasts]); // Added activeToasts to dependency array
-
-  const handleDismissToast = (notificationId: string) => {
-    setActiveToasts(prev => prev.filter(toast => toast && toast.id !== notificationId));
-    dismissNotification(notificationId);
-  };
-
-  const handleMarkAsRead = (notificationId: string) => {
-    setActiveToasts(prev => prev.filter(toast => toast && toast.id !== notificationId));
-    markNotificationAsRead(notificationId);
-  };
+  if (activeNotifications.length === 0) {
+    return null;
+  }
 
   return (
-    <div className="fixed top-20 right-4 z-40 space-y-3 max-w-sm">
-      {activeToasts.filter(notification => notification && notification.id).map((notification) => (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-sm">
+      {activeNotifications.slice(0, 3).map((notification) => (
         <NotificationToast
           key={notification.id}
           notification={notification}
-          onDismiss={() => handleDismissToast(notification.id)}
-          onMarkAsRead={() => handleMarkAsRead(notification.id)}
-          autoHide={notification.priority !== 'urgent'}
-          duration={notification.priority === 'high' ? 8000 : 5000}
+          onRead={() => markNotificationAsRead(notification.id)}
+          onDismiss={() => dismissNotification(notification.id)}
         />
       ))}
     </div>
   );
 };
-
-export default NotificationContainer;
