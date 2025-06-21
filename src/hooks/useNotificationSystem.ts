@@ -307,7 +307,7 @@ export const useNotificationSystem = () => {
     if (!user) return () => {};
 
     try {
-      // Clean up any existing channel
+      // Clean up existing channel if it exists
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
         channelRef.current = null;
@@ -316,26 +316,34 @@ export const useNotificationSystem = () => {
       // Create a new channel with a unique name
       const channelName = `notifications-${user.id}-${Date.now()}`;
       const channel = supabase.channel(channelName);
-      
+
+      // Set up the postgres changes listener
+      channel.on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          setNotifications(prev => [payload.new as Notification, ...prev]);
+        }
+      );
+
+      // Subscribe to the channel
+      channel.subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Successfully subscribed to notifications channel');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('Error subscribing to notifications channel');
+        }
+      });
+
       // Store the channel reference
       channelRef.current = channel;
 
-      // Set up the subscription
-      channel
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            setNotifications(prev => [payload.new as Notification, ...prev]);
-          }
-        )
-        .subscribe();
-
+      // Return cleanup function
       return () => {
         if (channelRef.current) {
           supabase.removeChannel(channelRef.current);
