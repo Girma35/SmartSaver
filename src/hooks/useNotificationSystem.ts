@@ -31,10 +31,32 @@ export const useNotificationSystem = () => {
       if (error) throw error;
 
       if (!data) {
-        // Create default preferences
+        // Create default preferences with explicit values
         const { data: newPrefs, error: createError } = await supabase
           .from('notification_preferences')
-          .insert({ user_id: user.id })
+          .insert({ 
+            user_id: user.id,
+            email_enabled: true,
+            push_enabled: true,
+            sms_enabled: false,
+            in_app_enabled: true,
+            low_balance_enabled: true,
+            low_balance_threshold: 100.00,
+            suspicious_activity_enabled: true,
+            suspicious_threshold_multiplier: 3.0,
+            overspending_enabled: true,
+            overspending_threshold_percent: 0.20,
+            recurring_bills_enabled: true,
+            recurring_bills_days_ahead: 3,
+            large_transaction_enabled: true,
+            large_transaction_threshold: 500.00,
+            weekly_summary_enabled: true,
+            monthly_summary_enabled: true,
+            quiet_hours_enabled: false,
+            quiet_hours_start: '22:00:00',
+            quiet_hours_end: '08:00:00',
+            quiet_hours_timezone: 'UTC'
+          })
           .select()
           .single();
 
