@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, BarChart3, MessageCircle, User, CreditCard, Menu, X, Building2, Bell } from 'lucide-react';
+import { Plus, BarChart3, MessageCircle, User, CreditCard, Menu, X, Building2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { useNotificationSystem } from '../hooks/useNotificationSystem';
 
 interface NavigationProps {
   currentPage: string;
@@ -10,16 +9,12 @@ interface NavigationProps {
 
 const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) => {
   const { user } = useAuth();
-  const { getNotificationSummary } = useNotificationSystem();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  const summary = getNotificationSummary();
 
   const navItems = [
     { id: 'add', label: 'Add Expense', icon: Plus },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
     { id: 'accounts', label: 'Accounts', icon: Building2 },
-    { id: 'notifications', label: 'Notifications', icon: Bell, badge: summary.unread_count },
     { id: 'ai', label: 'AI Assistant', icon: MessageCircle },
     { id: 'pricing', label: 'Pricing', icon: CreditCard },
     { id: 'profile', label: 'Profile', icon: User },
@@ -62,7 +57,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   <button
                     key={item.id}
                     onClick={() => handlePageChange(item.id)}
-                    className={`relative flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
                       currentPage === item.id
                         ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg transform scale-105'
                         : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -70,11 +65,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                   >
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
-                    {item.badge && item.badge > 0 && (
-                      <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                        {item.badge > 99 ? '99+' : item.badge}
-                      </span>
-                    )}
                   </button>
                 );
               })}
@@ -148,7 +138,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                     <button
                       key={item.id}
                       onClick={() => handlePageChange(item.id)}
-                      className={`relative w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 ${
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left font-medium transition-all duration-200 ${
                         currentPage === item.id
                           ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white shadow-lg'
                           : 'text-gray-700 hover:bg-gray-100'
@@ -156,11 +146,6 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
                     >
                       <Icon className="w-5 h-5" />
                       <span>{item.label}</span>
-                      {item.badge && item.badge > 0 && (
-                        <span className="ml-auto w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">
-                          {item.badge > 99 ? '99+' : item.badge}
-                        </span>
-                      )}
                     </button>
                   );
                 })}
