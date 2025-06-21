@@ -118,20 +118,16 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* YouTube-style Notification Bar - appears at the very top */}
+      {/* YouTube-style Notification Bar - positioned at top right */}
       {user && <NotificationBar />}
       
-      {/* Navigation - adjusted for notification bar */}
+      {/* Navigation */}
       {currentPage !== 'home' && currentPage !== 'success' && (
-        <div className="pt-12"> {/* Add padding-top to account for notification bar */}
-          <Navigation currentPage={currentPage} onPageChange={handlePageChange} />
-        </div>
+        <Navigation currentPage={currentPage} onPageChange={handlePageChange} />
       )}
       
-      {/* Main content - adjusted for notification bar */}
-      <div className={user ? 'pt-12' : ''}> {/* Add padding-top when user is logged in */}
-        {renderCurrentPage()}
-      </div>
+      {/* Main content */}
+      {renderCurrentPage()}
       
       {/* Toast notifications */}
       {user && <NotificationContainer />}
