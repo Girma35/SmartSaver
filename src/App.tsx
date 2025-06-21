@@ -4,6 +4,7 @@ import AuthForm from './components/AuthForm';
 import Landing from './pages/Landing';
 import AddExpense from './pages/AddExpense';
 import Dashboard from './pages/Dashboard';
+import Accounts from './pages/Accounts';
 import AIAssistant from './pages/AIAssistant';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
@@ -78,6 +79,8 @@ function App() {
       window.history.pushState({}, '', '/pricing');
     } else if (page === 'dashboard') {
       window.history.pushState({}, '', '/dashboard');
+    } else if (page === 'accounts') {
+      window.history.pushState({}, '', '/accounts');
     } else {
       window.history.pushState({}, '', '/');
     }
@@ -91,6 +94,8 @@ function App() {
         return <AddExpense />;
       case 'dashboard':
         return <Dashboard />;
+      case 'accounts':
+        return <Accounts />;
       case 'ai':
         return <AIAssistant />;
       case 'profile':

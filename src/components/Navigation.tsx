@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Home, Plus, BarChart3, MessageCircle, LogOut, User, CreditCard, Menu, X } from 'lucide-react';
+import { Home, Plus, BarChart3, MessageCircle, LogOut, User, CreditCard, Menu, X, Building2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 
 interface NavigationProps {
@@ -15,6 +15,7 @@ const Navigation: React.FC<NavigationProps> = ({ currentPage, onPageChange }) =>
     { id: 'home', label: 'Home', icon: Home },
     { id: 'add', label: 'Add Expense', icon: Plus },
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+    { id: 'accounts', label: 'Accounts', icon: Building2 },
     { id: 'ai', label: 'AI Assistant', icon: MessageCircle },
     { id: 'pricing', label: 'Pricing', icon: CreditCard },
     { id: 'profile', label: 'Profile', icon: User },
