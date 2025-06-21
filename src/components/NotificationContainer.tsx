@@ -10,8 +10,10 @@ const NotificationContainer: React.FC = () => {
   useEffect(() => {
     // Show new unread notifications as toasts
     const newNotifications = notifications.filter(
-      n => !n.read_at && 
+      n => n && // Ensure notification object exists
+           !n.read_at && 
            !n.dismissed_at && 
+           n.created_at && // Ensure created_at exists
            // Only show notifications from the last 5 minutes
            new Date(n.created_at).getTime() > Date.now() - 5 * 60 * 1000
     );
@@ -20,7 +22,8 @@ const NotificationContainer: React.FC = () => {
       setActiveToasts(prevActiveToasts => {
         // Filter out notifications that are already showing as toasts
         const filteredNewNotifications = newNotifications.filter(
-          n => !prevActiveToasts.some(toast => toast.id === n.id)
+          n => n && n.id && // Ensure notification and id exist
+               !prevActiveToasts.some(toast => toast && toast.id && toast.id === n.id)
         );
         
         if (filteredNewNotifications.length > 0) {
@@ -36,18 +39,18 @@ const NotificationContainer: React.FC = () => {
   }, [notifications]); // Removed activeToasts from dependency array
 
   const handleDismissToast = (notificationId: string) => {
-    setActiveToasts(prev => prev.filter(toast => toast.id !== notificationId));
+    setActiveToasts(prev => prev.filter(toast => toast && toast.id !== notificationId));
     dismissNotification(notificationId);
   };
 
   const handleMarkAsRead = (notificationId: string) => {
-    setActiveToasts(prev => prev.filter(toast => toast.id !== notificationId));
+    setActiveToasts(prev => prev.filter(toast => toast && toast.id !== notificationId));
     markNotificationAsRead(notificationId);
   };
 
   return (
     <div className="fixed top-20 right-4 z-40 space-y-3 max-w-sm">
-      {activeToasts.map((notification) => (
+      {activeToasts.filter(notification => notification && notification.id).map((notification) => (
         <NotificationToast
           key={notification.id}
           notification={notification}
