@@ -5,6 +5,7 @@ import Landing from './pages/Landing';
 import AddExpense from './pages/AddExpense';
 import Dashboard from './pages/Dashboard';
 import Accounts from './pages/Accounts';
+import NotificationCenter from './pages/NotificationCenter';
 import AIAssistant from './pages/AIAssistant';
 import Profile from './pages/Profile';
 import Pricing from './pages/Pricing';
@@ -81,6 +82,8 @@ function App() {
       window.history.pushState({}, '', '/dashboard');
     } else if (page === 'accounts') {
       window.history.pushState({}, '', '/accounts');
+    } else if (page === 'notifications') {
+      window.history.pushState({}, '', '/notifications');
     } else {
       window.history.pushState({}, '', '/');
     }
@@ -96,6 +99,8 @@ function App() {
         return <Dashboard />;
       case 'accounts':
         return <Accounts />;
+      case 'notifications':
+        return <NotificationCenter />;
       case 'ai':
         return <AIAssistant />;
       case 'profile':
